@@ -8,12 +8,11 @@ on:
     - cron: "0 23 * * *"
   workflow_dispatch:
 
-# 关键权限：
-#   contents: write —— 把生成的 data/ 提交回仓库，触发 Pages 重部署
-#   models: read   —— 允许用内置 GITHUB_TOKEN 调用 GitHub Models 免费额度（无需单独建 PAT）
+# 关键权限：contents: write —— 把生成的 data/ 提交回仓库，触发 Pages 重部署
+# 模型调用改用免费 OpenAI 兼容 API（GitHub Models 已于 2026-07-30 退役），
+# Key 通过 Secrets 注入，不写死在仓库里。
 permissions:
   contents: write
-  models: read
 
 jobs:
   generate:
@@ -27,10 +26,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Generate per-category daily content via GitHub Models (free quota)
+      - name: Generate per-category daily content via free LLM API
         env:
-          # Actions 自动提供的内置令牌，已通过 permissions: models: read 获得模型访问权
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: python .github/scripts/generate.py
 
       - name: Commit & push (triggers GitHub Pages redeploy)
