@@ -37,47 +37,6 @@ SYSTEM = (
 )
 
 
-PLACEHOLDER_MARKERS = ("暂未成功", "生成中", "部署后将由", "将在下次定时任务重试")
-
-
-def has_real_content(cat_id):
-    """该分类当天是否已存在「真实内容」。有则跳过生成，保留既有高质量版本，避免被覆盖。"""
-    p = os.path.join(ROOT, "data", cat_id, DATE + ".json")
-    if not os.path.exists(p):
-        return False
-    try:
-        with open(p, encoding="utf-8") as f:
-            txt = f.read()
-        if any(m in txt for m in PLACEHOLDER_MARKERS):
-            return False
-        d = json.loads(txt)
-        cells = d.get("cells", [])
-        if not cells:
-            return False
-        for c in cells:
-            if isinstance(c.get("body"), str) and len(c["body"].strip()) >= 10:
-                return True
-        return False
-    except Exception:
-        return False
-
-
-def ensure_date_index(cat_id):
-    folder = os.path.join(ROOT, "data", cat_id)
-    dates_path = os.path.join(folder, "dates.json")
-    dates = []
-    if os.path.exists(dates_path):
-        try:
-            dates = json.load(open(dates_path, encoding="utf-8"))
-        except Exception:
-            dates = []
-    if DATE not in dates:
-        dates.append(DATE)
-        dates.sort()
-        with open(dates_path, "w", encoding="utf-8") as f:
-            json.dump(dates, f, ensure_ascii=False, indent=2)
-
-
 def fill(tpl, cat):
     return (tpl.replace("{theme}", cat.get("theme", cat.get("label", "")))
                .replace("{strategy}", cat.get("strategy", cat.get("label", ""))))
@@ -152,12 +111,6 @@ def write_cat(cat):
     cat_id = cat["id"]
     folder = os.path.join(ROOT, "data", cat_id)
     os.makedirs(folder, exist_ok=True)
-
-    # 保护锁：当天已有真实内容则保留，不覆盖（确保高质量手工版不被云端生成覆盖）
-    if has_real_content(cat_id):
-        print("Skip data/%s/%s.json —— 已存在真实内容，保留高质量版本" % (cat_id, DATE))
-        ensure_date_index(cat_id)
-        return
 
     try:
         result = call_model(build_user(cat))
