@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-调用 GitHub Models 免费额度，为 config.json 中的每个分类按「分类 × 日期」生成 6 宫格内容。
+调用「OpenAI 兼容」的免费 LLM API，为 config.json 中每个分类按「分类 × 日期」生成 6 宫格内容。
 
-- 每个分类一次模型调用（当前 8 分类 = 8 次/天，远低于每日 50 次上限）。
-- 结果写入 data/<catId>/<date>.json，并维护 data/<catId>/dates.json 索引（供 App 回看历史）。
-- 认证：优先 GH_MODELS_PAT（fine-grained PAT, models:read）；否则用 GITHUB_TOKEN（Actions 内置，需 permissions: models: read）。
+GitHub Models 已于 2026-07-30 退役，故改用任意 OpenAI 兼容端点（OpenRouter / Groq / Gemini 等）。
+认证与端点通过环境变量注入（在 Actions 中以 Secret 提供，不写死在仓库里）：
+  LLM_API_KEY  必填，API Key
+  LLM_BASE_URL 选填，OpenAI 兼容的 chat/completions 基址，默认 OpenRouter
+  LLM_MODEL    选填，模型名，默认免费模型 google/gemini-2.5-flash
+
+- 每个分类一次模型调用（当前 8 分类 = 8 次/天）。
+- 结果写入 data/<catId>/<date>.json，并维护 data/<catId>/dates.json（供 App 回看历史）。
 """
 import os
 import json
@@ -18,12 +23,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 with open(os.path.join(ROOT, "config.json"), encoding="utf-8") as f:
     cfg = json.load(f)
 
-MODEL = cfg.get("model", "openai/gpt-4.1-mini")
 CATEGORIES = cfg.get("categories", [])
 CELLS = cfg.get("cells", [])
 DATE = datetime.date.today().isoformat()
 
-ENDPOINT = "https://models.github.ai/inference/chat/completions"
+MODEL = os.environ.get("LLM_MODEL", "google/gemini-2.5-flash")
+_BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+ENDPOINT = _BASE + "/chat/completions"
+API_KEY = os.environ.get("LLM_API_KEY", "")
 
 SYSTEM = (
     "你是一个中文内容生成器，服务于一个每日更新的多品类内容 App。"
@@ -67,6 +74,8 @@ def extract_json(text):
 
 
 def call_model(user):
+    if not API_KEY:
+        raise RuntimeError("缺少 LLM_API_KEY 环境变量（请在 Actions Secrets 中配置）")
     payload = json.dumps({
         "model": MODEL,
         "messages": [
@@ -76,15 +85,13 @@ def call_model(user):
         "temperature": 0.7,
         "max_tokens": 4096,
     }).encode("utf-8")
-    token = os.environ.get("GH_MODELS_PAT") or os.environ.get("GITHUB_TOKEN")
-    if not token:
-        raise RuntimeError("缺少认证：请设置 GH_MODELS_PAT 或 GITHUB_TOKEN（需 models:read）")
     req = urllib.request.Request(
         ENDPOINT, data=payload,
         headers={
-            "Authorization": "Bearer " + token,
+            "Authorization": "Bearer " + API_KEY,
             "Content-Type": "application/json",
-            "Accept": "application/vnd.github+json",
+            "HTTP-Referer": "https://github.com/znryddx/my-content-app",
+            "X-Title": "my-content-app",
         },
         method="POST",
     )
@@ -111,7 +118,6 @@ def write_cat(cat):
     cat_id = cat["id"]
     folder = os.path.join(ROOT, "data", cat_id)
     os.makedirs(folder, exist_ok=True)
-
     try:
         result = call_model(build_user(cat))
         cells = result.get("cells", [])
@@ -146,6 +152,9 @@ def write_cat(cat):
 def main():
     if not CATEGORIES:
         print("config.json 中没有 categories")
+        return
+    if not API_KEY:
+        print("[fatal] 未设置 LLM_API_KEY，无法生成。请在仓库 Settings → Secrets → Actions 添加 LLM_API_KEY。")
         return
     for cat in CATEGORIES:
         write_cat(cat)
