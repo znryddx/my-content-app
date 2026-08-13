@@ -1,7 +1,7 @@
 :root {
-  --bg: #fafbfc;
+  --bg: #ffffff;
   --card: #ffffff;
-  --line: #eceef1;
+  --line: #f0f2f5;
   --text: #374151;
   --muted: #9aa3b2;
   --accent: #2563eb;
@@ -17,34 +17,37 @@ body {
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
+
+/* ====== 顶栏（极简，几乎透明）====== */
 .topbar {
   position: sticky; top: 0; z-index: 10;
-  background: rgba(250, 251, 252, .85);
-  backdrop-filter: saturate(180%) blur(10px);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
-  border-bottom: 1px solid var(--line);
-  padding: 14px 18px;
-  font-size: 16px; font-weight: 500;
+  background: rgba(255,255,255,.75);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,.04);
+  padding: 13px 20px;
+  font-size: 15px; font-weight: 500;
   display: flex; align-items: center; justify-content: space-between;
 }
-.topbar .sub { font-size: 12px; color: var(--muted); font-weight: 400; }
-#scene { max-width: 960px; margin: 0 auto; padding: 18px 14px 70px; }
+.topbar .sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+#scene { max-width: 1000px; margin: 0 auto; padding: 16px 16px 70px; }
 
-/* ========== 首页：Marvis 布局（左休闲区 + 右双列工位） ========== */
+/* ========== 首页：Marvis 精确布局（左休闲区竖排 + 右双列工位浮底） ========== */
 .home-layout {
   display: flex;
-  gap: 18px;
+  gap: 28px;
   align-items: flex-start;
 }
 
-/* 左侧休闲区（竖排，照抄 Marvis 左列） */
+/* 左侧休闲区（~26% 宽度，竖排） */
 .leisure-zone {
-  width: 28%;
-  min-width: 190px;
+  width: 25%;
+  min-width: 170px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   flex-shrink: 0;
+  padding-top: 4px;
 }
 .leisure-item {
   text-align: center;
@@ -55,14 +58,18 @@ body {
   width: 100%;
   height: auto;
   display: block;
+  /* 轻微悬停反馈 */
+  transition: opacity .2s;
 }
+.leisure-item.clickable:hover .iso { opacity: .8; }
 .leisure-item .cap {
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 5px;
+  letter-spacing: .5px;
 }
 
-/* 右侧工位区（固定双列网格，照抄 Marvis 右侧） */
+/* 右侧工位区（固定双列网格 —— 无卡片、无边框、直接浮白底）*/
 .station-area {
   flex: 1;
   min-width: 0;
@@ -70,27 +77,50 @@ body {
 .station-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 24px 32px;
+  align-items: start;
 }
+
+/* 工位卡片 —— Marvis 风格：无背景无边框，只有标签+图形+提示 */
 .station {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 10px 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 4px 2px 8px;
   text-align: center;
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease;
+  transition: transform .2s ease;
 }
-.station:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(20, 30, 50, .08); }
-.station:active { transform: translateY(0); }
-.station .label { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
-.station .iso { width: 100%; height: auto; display: block; }
-.station .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.station:hover { transform: translateY(-4px) scale(1.01); }
+.station:active { transform: translateY(0) scale(.99); }
 
-/* 手机端：上下堆叠（休闲区在上，工位在下） */
-@media (max-width: 680px) {
+/* 工位标签（在图形上方，干净无衬线） */
+.station .label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+  letter-spacing: .3px;
+}
+.station .iso {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+/* 点击提示（极淡） */
+.station .hint {
+  font-size: 10.5px;
+  color: #c0c5cd;
+  margin-top: 3px;
+  transition: color .15s;
+}
+.station:hover .hint { color: var(--muted); }
+
+/* 手机端：上下堆叠 */
+@media (max-width: 720px) {
   .home-layout {
     flex-direction: column;
+    gap: 16px;
   }
   .leisure-zone {
     width: 100%;
@@ -98,18 +128,19 @@ body {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-  }
-  .leisure-item { width: 90px; }
-  .station-grid {
-    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
+  .leisure-item { width: 95px; }
+  .station-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 14px;
+  }
+  .station .label { font-size: 13px; }
 }
 @media (max-width: 400px) {
-  .station-grid { gap: 8px; }
-  .station { padding: 8px 6px 10px; border-radius: 14px; }
-  .station .label { font-size: 13px; }
+  .station-grid { gap: 12px 10px; }
+  .station .label { font-size: 12px; }
+  .station .hint { font-size: 9.5px; }
 }
 
 /* ---------- 内容视图：6 宫格 ---------- */
@@ -117,7 +148,7 @@ body {
 .cv-top {
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; justify-content: space-between;
-  background: rgba(250, 251, 252, .92);
+  background: rgba(255,255,255,.92);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   padding: 8px 2px 12px; margin-bottom: 4px;
 }
