@@ -54,14 +54,15 @@ body {
   cursor: default;
 }
 .leisure-item.clickable { cursor: pointer; }
-.leisure-item .iso {
+.leisure-item .scene-img {
   width: 100%;
   height: auto;
   display: block;
-  /* 轻微悬停反馈 */
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
   transition: opacity .2s;
 }
-.leisure-item.clickable:hover .iso { opacity: .8; }
+.leisure-item.clickable:hover .scene-img { opacity: .8; }
 .leisure-item .cap {
   font-size: 10.5px;
   color: var(--muted);
@@ -102,10 +103,12 @@ body {
   margin-bottom: 3px;
   letter-spacing: .3px;
 }
-.station .iso {
+.station .scene-img {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
 }
 /* 点击提示（极淡） */
 .station .hint {
