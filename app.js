@@ -66,28 +66,31 @@
     });
   }
 
-  // ---------- 首页（工位画廊） ----------
+  // ---------- 首页（Marvis 布局：左休闲区竖排 + 右双列工位网格） ----------
   function renderHome() {
     hideRedbar(); hideAddBtn();
     scene.innerHTML = '';
     var home = (cfg && cfg.home) || {};
+
+    // 主容器：左休闲 + 右工位
+    var layout = document.createElement('div'); layout.className = 'home-layout';
+
+    // ===== 左侧休闲区（照抄 Marvis 左列：茶水间 → 跑步机 → 马桶+挂钟）=====
     if (home.decor && home.decor.length) {
-      var dz = document.createElement('div'); dz.className = 'decor-zone';
+      var lz = document.createElement('div'); lz.className = 'leisure-zone';
+      var decorLabels = { kitchenette: '茶水间', treadmill: '健身区', toilet_zone: '休闲角' };
       home.decor.forEach(function (d) {
         var it = document.createElement('div');
-        it.className = 'decor-item' + (d === 'clock' ? ' clickable' : '');
-        it.title = d;
-        if (d === 'clock') {
-          it.innerHTML = '<div class="cap">历史</div>' + OfficeArt.decor('clock');
-          it.addEventListener('click', openDatePicker);
-        } else {
-          it.innerHTML = '<div class="cap">' + esc(d) + '</div>' + OfficeArt.decor(d);
-        }
-        dz.appendChild(it);
+        it.className = 'leisure-item' + (d === 'toilet_zone' ? ' clickable' : '');
+        it.innerHTML = '<div class="cap">' + esc(decorLabels[d] || d) + '</div>' + OfficeArt.decor(d);
+        if (d === 'toilet_zone') it.addEventListener('click', openDatePicker);
+        lz.appendChild(it);
       });
-      scene.appendChild(dz);
+      layout.appendChild(lz);
     }
 
+    // ===== 右侧工位区（固定双列网格）=====
+    var sa = document.createElement('div'); sa.className = 'station-area';
     var grid = document.createElement('div'); grid.className = 'station-grid';
     (cfg.categories || []).forEach(function (st, i) {
       var card = document.createElement('div'); card.className = 'station';
@@ -102,7 +105,9 @@
       });
       grid.appendChild(card);
     });
-    scene.appendChild(grid);
+    sa.appendChild(grid);
+    layout.appendChild(sa);
+    scene.appendChild(layout);
     window.scrollTo(0, 0);
   }
 
@@ -125,8 +130,11 @@
       var byId = {};
       if (data && data.cells) data.cells.forEach(function (c) { byId[c.id] = c; });
       cellsMeta.forEach(function (meta) {
+        // 每分类可覆盖宫格标题（如 造像的 quote → 禅语金句）
+        var overrides = (cat.cell_titles || {});
+        var displayTitle = (meta.id && overrides[meta.id]) || meta.title;
         var body = (byId[meta.id] && byId[meta.id].body) || '今日内容生成中…（部署后将由 GitHub Models 每天自动生成）';
-        var item = { id: meta.id, title: meta.title, body: body };
+        var item = { id: meta.id, title: displayTitle, body: body };
         var cell = makeCell(item, cat.id, date);
         if (cell) grid6.appendChild(cell);
       });
