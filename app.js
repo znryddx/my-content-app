@@ -66,7 +66,7 @@
     });
   }
 
-  // ---------- 首页（Marvis 布局：左休闲区竖排 + 右双列工位网格） ----------
+  // ---------- 首页（Marvis 布局：左休闲区竖排 + 右双列工位网格）—— 俯视写实图片 ----------
   function renderHome() {
     hideRedbar(); hideAddBtn();
     scene.innerHTML = '';
@@ -75,29 +75,34 @@
     // 主容器：左休闲 + 右工位
     var layout = document.createElement('div'); layout.className = 'home-layout';
 
-    // ===== 左侧休闲区（照抄 Marvis 左列：茶水间 → 跑步机 → 马桶+挂钟）=====
+    // ===== 左侧休闲区（俯视写实图片：咖啡吧 / 跑步机 / 绿植角）=====
+    var decorImages = { kitchenette: 'assets/coffee.png', treadmill: 'assets/treadmill.png', toilet_zone: 'assets/plant.png' };
+    var decorLabels = { kitchenette: '茶水间', treadmill: '健身区', toilet_zone: '绿植角' };
+
     if (home.decor && home.decor.length) {
       var lz = document.createElement('div'); lz.className = 'leisure-zone';
-      var decorLabels = { kitchenette: '茶水间', treadmill: '健身区', toilet_zone: '休闲角' };
       home.decor.forEach(function (d) {
         var it = document.createElement('div');
         it.className = 'leisure-item' + (d === 'toilet_zone' ? ' clickable' : '');
-        it.innerHTML = '<div class="cap">' + esc(decorLabels[d] || d) + '</div>' + OfficeArt.decor(d);
+        var imgSrc = decorImages[d] || '';
+        it.innerHTML =
+          '<div class="cap">' + esc(decorLabels[d] || d) + '</div>' +
+          (imgSrc ? '<img class="scene-img" src="' + esc(imgSrc) + '" alt="' + esc(d) + '" loading="lazy"/>' : '<div class="img-placeholder">' + esc(d) + '</div>');
         if (d === 'toilet_zone') it.addEventListener('click', openDatePicker);
         lz.appendChild(it);
       });
       layout.appendChild(lz);
     }
 
-    // ===== 右侧工位区（固定双列网格）=====
+    // ===== 右侧工位区（固定双列网格 —— 每个工位用同一张俯视工位图 + 分类标签）=====
     var sa = document.createElement('div'); sa.className = 'station-area';
     var grid = document.createElement('div'); grid.className = 'station-grid';
     (cfg.categories || []).forEach(function (st, i) {
       var card = document.createElement('div'); card.className = 'station';
-      var img = st.image || '';
+      var stImg = st.image || 'assets/workstation.png';  // 默认统一工位图；config 可覆盖为自定义图
       card.innerHTML =
         '<div class="label">' + esc(st.label) + '</div>' +
-        OfficeArt.station({ id: st.id, label: st.label, image: img, character: st.character !== false }, i) +
+        '<img class="scene-img" src="' + esc(stImg) + '" alt="' + esc(st.label) + '" loading="lazy"/>' +
         '<div class="hint">点击进入 →</div>';
       card.addEventListener('click', function () {
         currentCat = st;
