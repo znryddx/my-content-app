@@ -28,25 +28,55 @@ body {
   display: flex; align-items: center; justify-content: space-between;
 }
 .topbar .sub { font-size: 12px; color: var(--muted); font-weight: 400; }
-#scene { max-width: 900px; margin: 0 auto; padding: 18px 16px 70px; }
+#scene { max-width: 960px; margin: 0 auto; padding: 18px 14px 70px; }
 
-/* ---------- 首页：装饰区 + 工位 ---------- */
-.decor-zone {
-  display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
-  margin: 6px 0 26px; padding: 16px;
-  border: 1px solid var(--line); border-radius: 20px; background: var(--card);
+/* ========== 首页：Marvis 布局（左休闲区 + 右双列工位） ========== */
+.home-layout {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
 }
-.decor-item { width: 84px; text-align: center; }
-.decor-item.clickable { cursor: pointer; }
-.decor-item .iso { width: 100%; height: auto; display: block; }
-.decor-item .cap { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
 
-.station-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }
+/* 左侧休闲区（竖排，照抄 Marvis 左列） */
+.leisure-zone {
+  width: 28%;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex-shrink: 0;
+}
+.leisure-item {
+  text-align: center;
+  cursor: default;
+}
+.leisure-item.clickable { cursor: pointer; }
+.leisure-item .iso {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.leisure-item .cap {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* 右侧工位区（固定双列网格，照抄 Marvis 右侧） */
+.station-area {
+  flex: 1;
+  min-width: 0;
+}
+.station-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
 .station {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 10px 8px 14px;
+  padding: 10px 8px 12px;
   text-align: center;
   cursor: pointer;
   transition: transform .15s ease, box-shadow .15s ease;
@@ -56,6 +86,31 @@ body {
 .station .label { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
 .station .iso { width: 100%; height: auto; display: block; }
 .station .hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* 手机端：上下堆叠（休闲区在上，工位在下） */
+@media (max-width: 680px) {
+  .home-layout {
+    flex-direction: column;
+  }
+  .leisure-zone {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+  .leisure-item { width: 90px; }
+  .station-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+@media (max-width: 400px) {
+  .station-grid { gap: 8px; }
+  .station { padding: 8px 6px 10px; border-radius: 14px; }
+  .station .label { font-size: 13px; }
+}
 
 /* ---------- 内容视图：6 宫格 ---------- */
 .cv { position: relative; }
