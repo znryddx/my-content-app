@@ -164,6 +164,38 @@
       s += box(32, 32, 16, 13, 13, 13, WOOD, ox, oy);
       s += blob(38, 38, 32, 12, '#c9883f', ox, oy);
       s += blob(36, 36, 34, 8, '#e0a85a', ox, oy);
+    } else if (name === 'kitchenette') {
+      // 茶水间：白色长台 + 咖啡杯排成一行 + 玛芬 + 咖啡机（照抄 Marvis 左上角）
+      s += box(8, 18, 0, 72, 24, 26, WHITE, ox, oy);           // 长柜台
+      s += box(10, 20, 26, 68, 20, 2, { top: '#f0f3f6', left: '#e4e9ef', right: '#d8dfe7' }, ox, oy); // 台面
+      // 一排咖啡杯
+      [14, 24, 34, 44, 54].forEach(function (px) {
+        s += box(px, 22, 28, 6, 6, 8, { top: '#ffffff', left: '#e8ecf1', right: '#dde3ea' }, ox, oy);
+        s += blob(px + 3, 25, 28, 4, '#8b5a2b', ox, oy);       // 杯里咖啡色
+      });
+      // 玛芬一排
+      [16, 28, 40].forEach(function (px) {
+        s += box(px, 10, 28, 7, 7, 7, WOOD, ox, oy);
+        s += blob(px + 3.5, 13.5, 30, 5, '#c98a5a', ox, oy);     // 玛芬顶
+      });
+      // 咖啡机
+      s += box(56, 12, 28, 18, 14, 20, DARK, ox, oy);            // 机身
+      s += box(58, 14, 48, 14, 10, 3, { top: '#6b7280', left: '#4a525c', right: '#363d49' }, ox, oy); // 出水口
+    } else if (name === 'toilet_zone') {
+      // 马桶区：马桶 + 挂钟（Marvis 左下角）
+      s += box(34, 30, 0, 20, 16, 15, WHITE, ox, oy);            // 马桶主体
+      s += box(33, 40, 0, 22, 18, 8, { top: '#fbfdff', left: '#e9eef3', right: '#dde4ea' }, ox, oy); // 马桶座圈
+      s += box(35, 43, 8, 18, 12, 4, WHITE, ox, oy);             // 马桶盖
+      // 挂钟（小号，放在马桶旁边）
+      s += '<circle cx="76" cy="52" r="16" fill="#ffffff" stroke="#dde4ea" stroke-width="2"/>';
+      for (var tt = 0; tt < 12; tt++) {
+        var aa = tt * Math.PI / 6;
+        var xx = 76 + Math.sin(aa) * 12, yy = 52 - Math.cos(aa) * 12;
+        s += '<line x1="' + xx.toFixed(1) + '" y1="' + yy.toFixed(1) + '" x2="' + (76 + Math.sin(aa) * 14.5).toFixed(1) + '" y2="' + (52 - Math.cos(aa) * 14.5).toFixed(1) + '" stroke="#cbd5e1" stroke-width="1"/>';
+      }
+      s += '<line x1="76" y1="52" x2="76" y2="43" stroke="#374151" stroke-width="2" stroke-linecap="round"/>';
+      s += '<line x1="76" y1="52" x2="83" y2="52" stroke="#374151" stroke-width="1.5" stroke-linecap="round"/>';
+      s += '<circle cx="76" cy="52" r="2" fill="#ef4444"/>';
     } else {
       s += box(38, 36, 0, 12, 12, 12, WOOD, ox, oy);
       s += blob(44, 42, 16, 10, '#43bd84', ox, oy);
