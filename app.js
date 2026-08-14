@@ -76,7 +76,7 @@
     var layout = document.createElement('div'); layout.className = 'home-layout';
 
     // ===== 左侧休闲区（俯视写实图片：咖啡吧 / 跑步机 / 绿植角）=====
-    var decorImages = { kitchenette: 'assets/coffee.png', treadmill: 'assets/treadmill.png', toilet_zone: 'assets/plant.png' };
+    var decorImages = { kitchenette: 'assets/coffee.webp', treadmill: 'assets/treadmill.webp', toilet_zone: 'assets/plant.webp' };
     var decorLabels = { kitchenette: '茶水间', treadmill: '健身区', toilet_zone: '绿植角' };
 
     if (home.decor && home.decor.length) {
@@ -99,7 +99,7 @@
     var grid = document.createElement('div'); grid.className = 'station-grid';
     (cfg.categories || []).forEach(function (st, i) {
       var card = document.createElement('div'); card.className = 'station';
-      var stImg = st.image || 'assets/workstation.png';  // 默认统一工位图；config 可覆盖为自定义图
+      var stImg = st.image || 'assets/workstation.webp';  // 默认统一工位图；config 可覆盖为自定义图
       card.innerHTML =
         '<div class="label">' + esc(st.label) + '</div>' +
         '<img class="scene-img" src="' + esc(stImg) + '" alt="' + esc(st.label) + '" loading="lazy"/>' +
