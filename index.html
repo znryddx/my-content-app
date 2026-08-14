@@ -1,69 +1,54 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#08090b" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>我的每日内容</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="phone">
-    <!-- 状态栏 -->
-    <div class="statusbar">
-      <div class="sb-left"><span id="sbTime">--:--</span></div>
-      <div class="sb-right">
-        <span class="sb-net">5G</span>
-        <span class="sb-bat"><i></i><b id="sbBat">100%</b></span>
-      </div>
+  <!-- 顶栏（极简、几乎透明） -->
+  <header class="topbar">
+    <div class="topbar-title" id="topbarTitle">我的每日内容</div>
+    <div class="topbar-sub" id="topbarSub">Marvis 工位画廊</div>
+  </header>
+
+  <!-- 主页：Marvis 工位网格 -->
+  <main id="scene"></main>
+
+  <!-- 品类视图：内容卡片网格 -->
+  <section class="cv" id="cv" aria-hidden="true">
+    <div class="cv-top">
+      <button class="cv-back" id="cvBack" aria-label="返回">‹ 返回</button>
+      <div class="cv-title" id="cvTitle"></div>
+      <button class="cv-date" id="cvDate">切换日期 ▾</button>
     </div>
+    <div class="cv-content" id="cvContent"></div>
+  </section>
 
-    <!-- 首页 launcher -->
-    <main id="scene"></main>
-
-    <!-- 底部 Dock -->
-    <nav class="dock" id="dock"></nav>
-
-    <!-- 品类页（奶油色滑出面板） -->
-    <section class="category-page" id="categoryPage" aria-hidden="true">
-      <button class="cp-back" id="cpBack" aria-label="返回">‹</button>
-      <header class="cp-header">
-        <div class="cp-title" id="cpTitle"></div>
-        <div class="cp-sub" id="cpSub"></div>
-      </header>
-      <div class="cp-banner" id="cpBanner"></div>
-      <div class="cp-date-row" id="cpDateRow"><span id="cpDate"></span>&nbsp;<b>切换日期 ▾</b></div>
-      <div class="cp-modules" id="cpModules"></div>
-    </section>
-
-    <!-- 详情弹层 -->
-    <div class="sheet" id="sheet" aria-hidden="true">
-      <div class="sheet-card">
-        <div class="sheet-head">
-          <button class="sheet-copy" id="sheetCopy">复制全文</button>
-          <div class="sheet-icon" id="sheetIcon">✨</div>
-          <div class="sheet-title" id="sheetTitle"></div>
-          <div class="sheet-sub" id="sheetSub">每日内容 · 可复制</div>
-        </div>
-        <div class="sheet-desc" id="sheetDesc"></div>
-        <button class="sheet-close" id="sheetClose">知道了</button>
-      </div>
+  <!-- 内容详情弹层 -->
+  <div class="detail-modal" id="detailModal" aria-hidden="true">
+    <div class="detail-top">
+      <button class="detail-btn" id="detailBack">‹ 返回列表</button>
+      <button class="detail-btn" id="detailCopy">复制全文</button>
     </div>
-
-    <!-- 日期选择弹层 -->
-    <div class="sheet" id="dateSheet" aria-hidden="true">
-      <div class="sheet-card">
-        <div class="sheet-head">
-          <div class="sheet-title">选择日期</div>
-          <div class="sheet-sub">回看往日内容</div>
-        </div>
-        <div class="date-list" id="dateList"></div>
-        <button class="sheet-close" id="dateClose">关闭</button>
-      </div>
-    </div>
-
-    <div class="toast" id="toast"></div>
+    <h3 class="detail-title" id="detailTitle"></h3>
+    <div class="detail-body" id="detailBody"></div>
   </div>
+
+  <!-- 日期选择弹层 -->
+  <div class="date-sheet" id="dateSheet" aria-hidden="true">
+    <div class="detail-top">
+      <button class="detail-btn" id="dateClose">‹ 关闭</button>
+      <div class="detail-sheet-title">选择日期</div>
+      <div></div>
+    </div>
+    <div class="date-list" id="dateList"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="./isometric.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
