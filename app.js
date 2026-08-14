@@ -130,7 +130,7 @@
     scene.appendChild(wrap);
 
     var grid6 = wrap.querySelector('#grid6');
-    var cellsMeta = (cfg.cells || []);
+    var cellsMeta = (cat.cells || cfg.cells || []);
     fetchData(cat.id, date).then(function (data) {
       var byId = {};
       if (data && data.cells) data.cells.forEach(function (c) { byId[c.id] = c; });
