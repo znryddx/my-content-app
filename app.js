@@ -95,12 +95,13 @@
       var card = document.createElement('div');
       card.className = 'station-card';
       var svg = window.OfficeArt.station({ label: cat.label, scarfColor: scarf }, i);
-      var photoName = encodeURIComponent(cat.label) + '.png';
+      var photoWebp = encodeURIComponent(cat.label) + '.webp';
       card.innerHTML =
         '<div class="station-photo-wrap">' +
-          '<img class="station-photo" src="assets/station/' + photoName + '" alt="' + esc(cat.label) + '"' +
+          '<img class="station-photo" src="assets/station/' + photoWebp + '" alt="' + esc(cat.label) + '"' +
+          ' decoding="async"' +
           ' onload="this.nextElementSibling.style.display=\'none\';"' +
-          ' onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';">' +
+          ' onerror="if(String(this.src).endsWith(\'.webp\')){this.src=this.src.replace(\'.webp\',\'.png\');}else{this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';}">' +
           '<div class="station-svg" style="display:none;">' + svg + '</div>' +
         '</div>' +
         '<div class="station-label">' + esc(cat.label) + '</div>' +
