@@ -95,13 +95,14 @@
       var card = document.createElement('div');
       card.className = 'station-card';
       var svg = window.OfficeArt.station({ label: cat.label, scarfColor: scarf }, i);
+      var photoThumb = encodeURIComponent(cat.label) + '@thumb.webp';
       var photoWebp = encodeURIComponent(cat.label) + '.webp';
       card.innerHTML =
         '<div class="station-photo-wrap">' +
-          '<img class="station-photo" src="assets/station/' + photoWebp + '" alt="' + esc(cat.label) + '"' +
+          '<img class="station-photo" src="assets/station/' + photoThumb + '" alt="' + esc(cat.label) + '"' +
           ' decoding="async"' +
           ' onload="this.nextElementSibling.style.display=\'none\';"' +
-          ' onerror="if(String(this.src).endsWith(\'.webp\')){this.src=this.src.replace(\'.webp\',\'.png\');}else{this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';}">' +
+          ' onerror="if(String(this.src).indexOf(\'@thumb.webp\')>=0){this.src=this.src.replace(\'@thumb.webp\',\'.webp\');}else if(String(this.src).endsWith(\'.webp\')){this.src=this.src.replace(\'.webp\',\'.png\');}else{this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';}">' +
           '<div class="station-svg" style="display:none;">' + svg + '</div>' +
         '</div>' +
         '<div class="station-label">' + esc(cat.label) + '</div>' +
@@ -171,12 +172,18 @@
     var m = $('#detailModal');
     m.classList.add('show');
     m.setAttribute('aria-hidden', 'false');
-    m.scrollTop = 0;
+    var mk = $('#detailMask');
+    mk.classList.add('show');
+    mk.setAttribute('aria-hidden', 'false');
+    $('#detailBody').scrollTop = 0;
   }
   function closeDetail() {
     var m = $('#detailModal');
     m.classList.remove('show');
     m.setAttribute('aria-hidden', 'true');
+    var mk = $('#detailMask');
+    mk.classList.remove('show');
+    mk.setAttribute('aria-hidden', 'true');
   }
 
   // ---------- 日期选择 ----------
@@ -225,7 +232,8 @@
 
       $('#cvBack').addEventListener('click', closeCategory);
       $('#cvDate').addEventListener('click', openDatePicker);
-      $('#detailBack').addEventListener('click', closeDetail);
+      $('#detailKnown').addEventListener('click', closeDetail);
+      $('#detailMask').addEventListener('click', closeDetail);
       $('#detailCopy').addEventListener('click', function () {
         if (!currentDetail.body) return;
         copyText(currentDetail.body);
