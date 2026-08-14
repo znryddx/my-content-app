@@ -94,8 +94,15 @@
       var scarf = SCARF[cat.id] || '#3a6b5e';
       var card = document.createElement('div');
       card.className = 'station-card';
+      var svg = window.OfficeArt.station({ label: cat.label, scarfColor: scarf }, i);
+      var photoName = encodeURIComponent(cat.label) + '.png';
       card.innerHTML =
-        window.OfficeArt.station({ label: cat.label, scarfColor: scarf }, i) +
+        '<div class="station-photo-wrap">' +
+          '<img class="station-photo" src="assets/station/' + photoName + '" alt="' + esc(cat.label) + '"' +
+          ' onload="this.nextElementSibling.style.display=\'none\';"' +
+          ' onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';">' +
+          '<div class="station-svg" style="display:none;">' + svg + '</div>' +
+        '</div>' +
         '<div class="station-label">' + esc(cat.label) + '</div>' +
         '<div class="station-hint">点击进入 →</div>';
       card.addEventListener('click', function () { openCategory(cat.id); });
