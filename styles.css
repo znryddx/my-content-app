@@ -321,3 +321,33 @@ body {
   .station-grid { gap: 24px 14px; }
   .station-label { font-size: 13px; }
 }
+
+/* ===== 图片板块 ===== */
+.station-card.img-tile { cursor: pointer; }
+.img-tile-wrap {
+  background: #fff;
+  border: 2px dashed #e2e6ec;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img-tile-wrap svg { width: 46px; height: 46px; }
+.img-board .cv-content.img-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.img-cell {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.img-cell:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.05); }
+.img-thumb { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; background: #f3f4f6; }
+.img-name { font-size: 11px; color: var(--muted); padding: 8px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.img-empty { grid-column: 1 / -1; text-align: center; color: var(--text); font-size: 15px; padding: 80px 20px; line-height: 1.8; }
+.img-empty span { display: block; color: var(--muted); font-size: 12px; margin-top: 8px; max-width: 420px; margin-left: auto; margin-right: auto; }
+.img-upload-btn { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+.img-upload-btn:hover { background: var(--accent); color: #fff; }
+@media (max-width: 880px) { .img-board .cv-content.img-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .img-board .cv-content.img-grid { grid-template-columns: repeat(2, 1fr); } }
