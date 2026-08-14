@@ -1,28 +1,14 @@
-// ===== Marvis 工位风格 —— 正面 2D 渲染 =====
-// 严格对齐 Marvis 视觉：正面平视（小马/椅子/桌子/显示器全部正对镜头），
-// 纯白底、白色家具 + 黑色点缀 + 围巾色，柔和大范围阴影。
+// ===== Marvis 工位 —— 正面平视（严格像素级对齐 marvis001.png）=====
+// 关键修正：
+//   1. 小马头部 = 火焰形（头顶多个尖角），不是椭圆
+//   2. 眯笑眼 = 两道上挑白弧，不是两个小白圆
+//   3. 长尖耳朵 + 围巾两尾端下垂
+//   4. 桌子下方有抽屉柜（3 抽屉）
+//   5. 显示器支架 = 白色（不是黑色）
+//   6. 椅子气压杆 = 黑色细条；五星脚底盘 = 白色
 (function () {
   'use strict';
 
-  // 共享 SVG 阴影定义（在每个 station 的 svg 根部复用）
-  function shadowFilter() {
-    // 大柔影 + 小硬影，模拟 Marvis 那种阴影偏右下方、边缘极软的感觉
-    return '<defs>' +
-      '<filter id="marvisShadow" x="-30%" y="-30%" width="160%" height="160%">' +
-      '<feGaussianBlur in="SourceAlpha" stdDeviation="6"/>' +
-      '<feOffset dx="4" dy="8" result="offsetblur"/>' +
-      '<feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer>' +
-      '<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>' +
-      '</filter>' +
-      '<filter id="marvisShadowSoft" x="-50%" y="-50%" width="200%" height="200%">' +
-      '<feGaussianBlur in="SourceAlpha" stdDeviation="14"/>' +
-      '<feOffset dx="6" dy="14" result="offsetblur"/>' +
-      '<feComponentTransfer><feFuncA type="linear" slope="0.10"/></feComponentTransfer>' +
-      '</filter>' +
-      '</defs>';
-  }
-
-  // 将 #rrggbb 加深/变浅 p（-100..100）
   function shadeColor(hex, p) {
     var n = parseInt(hex.slice(1), 16);
     var r = Math.max(0, Math.min(255, (n >> 16) + p));
@@ -31,164 +17,209 @@
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   }
 
-  // ===== 桌面（白色横板 + 4 根细桌腿）=====
-  // 桌面宽 150，厚 8，竖直方向 150-180 在 y 轴
-  function desk() {
-    var s = '';
-    // 4 根桌腿（在桌面下，露到椅子前）。桌面中心大约在 x=100，桌腿分布于 x∈[35,165], y∈[125,165]
-    for (var i = 0; i < 4; i++) {
-      var lx = i % 2 === 0 ? 42 : 158;
-      var ly = i < 2 ? 130 : 160;
-      // 桌腿用极浅白细矩形
-      s += '<rect x="' + (lx - 2) + '" y="' + ly + '" width="4" height="20" fill="#ecedf0"/>';
-    }
-    // 桌面（白长矩形 + 极淡下边阴影线）
-    s += '<rect x="20" y="105" width="160" height="10" fill="#ffffff" stroke="#e2e5e9" stroke-width="0.6"/>';
-    // 桌面下方 1px 暗线
-    s += '<rect x="20" y="114" width="160" height="1" fill="#d8dce2"/>';
-    return s;
+  function shadowDefs() {
+    return '<defs>'
+      + '<radialGradient id="marvisGroundShadow" cx="50%" cy="50%" r="50%">'
+      +   '<stop offset="0%" stop-color="#94a3b8" stop-opacity="0.22"/>'
+      +   '<stop offset="60%" stop-color="#94a3b8" stop-opacity="0.08"/>'
+      +   '<stop offset="100%" stop-color="#94a3b8" stop-opacity="0"/>'
+      + '</radialGradient>'
+      + '</defs>';
   }
 
-  // ===== 椅子（白色方形椅背 + 灰色座面 + 黑色五星脚 + 气压杆）=====
-  // 椅背高、宽，呈矩形，正对观众，中心位于 x=100，y 范围 60-130
-  function chair() {
-    var s = '';
-    // 椅背填充（白）
-    s += '<rect x="78" y="58" width="44" height="60" fill="#ffffff" stroke="#e2e5e9" stroke-width="0.8"/>';
-    // 椅背边框细线增强立体
-    s += '<rect x="78" y="58" width="44" height="60" fill="none" stroke="#d8dce2" stroke-width="0.6"/>';
-    // 椅背顶部圆角（用 path）
-    s += '<rect x="78" y="118" width="44" height="10" fill="#e6e9ee" stroke="#d8dce2" stroke-width="0.6"/>';
-    // 座面
-    s += '<rect x="70" y="128" width="60" height="6" fill="#c7ccd3" stroke="#9aa1ab" stroke-width="0.5"/>';
-    // 气压杆（中央黑细条）
-    s += '<rect x="98" y="134" width="4" height="22" fill="#2d333d"/>';
-    // 五星脚 5 条辐射 + 5 个小脚轮
-    for (var i = 0; i < 5; i++) {
-      var angle = -Math.PI / 2 + (i * Math.PI * 2) / 5;
-      var x1 = 100, y1 = 162;
-      var x2 = 100 + Math.cos(angle) * 22;
-      var y2 = 162 + Math.sin(angle) * 22;
-      s += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="#5e6670" stroke-width="2.2" stroke-linecap="round"/>';
-    }
-    // 5 个小脚轮
-    for (var j = 0; j < 5; j++) {
-      var a2 = -Math.PI / 2 + (j * Math.PI * 2) / 5;
-      var wx = 100 + Math.cos(a2) * 22;
-      var wy = 162 + Math.sin(a2) * 22;
-      s += '<circle cx="' + wx.toFixed(1) + '" cy="' + wy.toFixed(1) + '" r="2.5" fill="#3a414c"/>';
-    }
-    // 中央五星盘
-    s += '<ellipse cx="100" cy="162" rx="10" ry="4" fill="#2d333d"/>';
-    return s;
-  }
-
-  // ===== 显示器（黑色边框 + 中央彩色大色块屏幕 + 支架 + 底座）=====
-  // 屏幕宽 130 高 80，居中 x=100，y 12-92
-  function monitor(scarfColor) {
-    scarfColor = scarfColor || '#3a6b5e';
-    var s = '';
-    // 显示器底座（小梯形 / 椭圆）
-    s += '<ellipse cx="100" cy="103" rx="22" ry="3" fill="#d8dce2"/>';
-    s += '<rect x="78" y="98" width="44" height="5" fill="#3a414c"/>';
-    // 支架细颈
-    s += '<rect x="97" y="92" width="6" height="8" fill="#2d333d"/>';
-    // 显示器外壳（黑色宽边框）
-    s += '<rect x="32" y="14" width="136" height="80" rx="3" fill="#1a1d24"/>';
-    // 屏幕内框（距外壳 4px）
-    s += '<rect x="36" y="18" width="128" height="72" rx="2" fill="#0c0d12"/>';
-    // 屏幕中央围巾色大色块（占屏幕约 75% 高度）
-    var bx = 50, by = 28, bw = 100, bh = 52;
-    s += '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="1" fill="' + scarfColor + '"/>';
-    // 屏幕顶部反光高光（细微白色斜条 + 透明叠加）
-    s += '<rect x="36" y="18" width="128" height="6" fill="rgba(255,255,255,0.07)"/>';
-    // 屏幕下方一抹反光（透明白色斜条，模拟环境光）
-    s += '<polygon points="40,82 160,82 156,86 44,86" fill="rgba(255,255,255,0.05)"/>';
-    // 屏幕底部小指示灯（Apple 风，灰色小点）
-    s += '<circle cx="148" cy="91" r="0.6" fill="#5e6670"/>';
-    // 屏幕左上角小 logo（Marvis logo 区）
-    s += '<rect x="40" y="22" width="6" height="2" fill="' + shadeColor(scarfColor, 30) + '"/>';
-    return s;
-  }
-
-  // ===== 小马吉祥物（Marvis 黑猫 / 小马 + 围巾）=====
-  // 头在上，身子大半被椅背遮挡，露出头部和围巾上沿。
-  // 中心位于 x=100，头部 y≈28-55，围巾 y≈55-65
+  // ===== 小马吉祥物（Marvis 黑马 —— 火焰头 / 眯笑眼 / 长尖耳 / 宽围巾垂尾）=====
+  // 中心 cx=100；头上方火焰尖在 y=12~30；眼睛在 y=46；围巾在 y=64~76；尾端垂到 y=88
   function horse(scarfColor) {
-    scarfColor = scarfColor || '#3a6b5e';
+    scarfColor = scarfColor || '#c0392b';
     var s = '';
     var cx = 100;
-    // 头（椭圆 / 圆，黑色）
-    s += '<ellipse cx="' + cx + '" cy="40" rx="22" ry="20" fill="#0c0d12"/>';
-    // 头部高光（顶部微微提亮，模拟顶光）
-    s += '<ellipse cx="' + cx + '" cy="32" rx="14" ry="4" fill="#1f242d" opacity="0.6"/>';
-    // 两只耳朵（黑色三角，在头顶）
-    s += '<polygon points="84,28 80,16 90,22" fill="#0c0d12"/>';
-    s += '<polygon points="116,28 120,16 110,22" fill="#0c0d12"/>';
-    // 耳朵内侧（更黑）
-    s += '<polygon points="85,26 83,20 88,23" fill="#1a1d24"/>';
-    s += '<polygon points="115,26 117,20 112,23" fill="#1a1d24"/>';
-    // 头顶刘海尖
-    s += '<polygon points="' + (cx - 3) + ',' + (24) + ' ' + cx + ',' + (18) + ' ' + (cx + 3) + ',' + (24) + '" fill="#0c0d12"/>';
-    // 两只眼睛（白色圆点，参考图是笑眯眼/圆眼，简化为两个白色圆）
-    s += '<ellipse cx="' + (cx - 9) + '" cy="42" rx="2.6" ry="3" fill="#ffffff"/>';
-    s += '<ellipse cx="' + (cx + 9) + '" cy="42" rx="2.6" ry="3" fill="#ffffff"/>';
-    // 眼瞳（极小黑点）
-    s += '<circle cx="' + (cx - 9) + '" cy="42" r="0.8" fill="#0c0d12"/>';
-    s += '<circle cx="' + (cx + 9) + '" cy="42" r="0.8" fill="#0c0d12"/>';
-    // 小腮红（极淡粉圈，可选，参考图没我们就跳）
-    // ===== 围巾 =====
-    // 围巾绕身体，宽度 50、覆盖颈部和肩部，颜色围巾色
-    // 在 y=55 至 65 显示围巾横条
-    s += '<rect x="' + (cx - 22) + '" y="55" width="44" height="9" rx="1" fill="' + scarfColor + '"/>';
-    // 围巾上方亮边
-    s += '<rect x="' + (cx - 22) + '" y="55" width="44" height="2" fill="' + shadeColor(scarfColor, 15) + '"/>';
-    // 围巾下方阴影
-    s += '<rect x="' + (cx - 22) + '" y="62" width="44" height="2" fill="' + shadeColor(scarfColor, -20) + '"/>';
-    // 围巾流苏（一侧垂下的小色块）
-    s += '<rect x="' + (cx - 14) + '" y="64" width="3" height="6" fill="' + shadeColor(scarfColor, -15) + '"/>';
-    s += '<rect x="' + (cx + 11) + '" y="64" width="3" height="6" fill="' + shadeColor(scarfColor, -15) + '"/>';
 
-    // 身体露出部分（被椅背遮挡但脖颈前会有一小部分黑色身体显示在围巾下沿）
-    s += '<rect x="' + (cx - 16) + '" y="65" width="32" height="14" fill="#12141a"/>';
+    // ===== 头部（火焰/尖刺轮廓）=====
+    // 5 个尖角 + 4 个凹谷，包络线 + 下方椭圆脸
+    var flame = ''
+      // 从左上沿顺时针走
+      + 'M ' + (cx-24) + ' 56 '                                          // 左下角
+      + 'Q ' + (cx-26) + ' 36 ' + (cx-19) + ' 34 '                        // 左侧鼓
+      // 4 个尖：左尖、尖2、左凹、尖3（最高）、中凹、尖4（右高）、右凹、尖5
+      + 'L ' + (cx-17) + ' 22 '
+      + 'L ' + (cx-13) + ' 30 '
+      + 'L ' + (cx-9)  + ' 16 '
+      + 'L ' + (cx-5)  + ' 26 '
+      + 'L ' + (cx)    + ' 8 '                                            // 最高尖
+      + 'L ' + (cx+5)  + ' 26 '
+      + 'L ' + (cx+9)  + ' 14 '
+      + 'L ' + (cx+13) + ' 30 '
+      + 'L ' + (cx+17) + ' 20 '
+      + 'L ' + (cx+19) + ' 34 '
+      + 'Q ' + (cx+26) + ' 36 ' + (cx+24) + ' 56 '                       // 右侧鼓
+      + 'Z';
+    s += '<path d="' + flame + '" fill="#0c0d12"/>';
+    // 脸补底（让脸看起来圆润，遮挡尖角内凹线）
+    s += '<ellipse cx="' + cx + '" cy="50" rx="22" ry="12" fill="#0c0d12"/>';
+
+    // 头顶高光（顶端 5 个尖之间加细微亮边）
+    var hl = ''
+      + 'M ' + (cx-12) + ' 14 L ' + (cx-9) + ' 16 L ' + (cx-8) + ' 18 Z'
+      + 'M ' + (cx-2) + ' 10 L ' + cx + ' 8 L ' + (cx+2) + ' 10 Z'
+      + 'M ' + (cx+8) + ' 14 L ' + (cx+9) + ' 14 L ' + (cx+10) + ' 16 Z';
+    s += '<path d="' + hl + '" fill="#1a1d24"/>';
+
+    // ===== 长尖耳朵（头顶两侧细长尖耳）=====
+    s += '<polygon points="' + (cx-22) + ',34 ' + (cx-26) + ',20 ' + (cx-17) + ',30" fill="#0c0d12"/>';
+    s += '<polygon points="' + (cx+22) + ',34 ' + (cx+26) + ',20 ' + (cx+17) + ',30" fill="#0c0d12"/>';
+    // 耳朵内侧（极淡一点高光）
+    s += '<polygon points="' + (cx-21) + ',32 ' + (cx-23) + ',24 ' + (cx-19) + ',30" fill="#1a1d24" opacity="0.7"/>';
+    s += '<polygon points="' + (cx+21) + ',32 ' + (cx+23) + ',24 ' + (cx+19) + ',30" fill="#1a1d24" opacity="0.7"/>';
+
+    // ===== 眯笑眼（两道上挑白弧）=====
+    s += '<path d="M 90 49 Q 95 44 100 49" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+    s += '<path d="M 100 49 Q 105 44 110 49" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+
+    // ===== 围巾（绕身体宽条带 + 两尾端垂下）=====
+    // 主带宽 50 / 厚 14 / y=64-78
+    var scarfW = 50, scarfTop = 64, scarfBot = 78;
+    var scarfPath = ''
+      + 'M ' + (cx-scarfW/2) + ' ' + scarfTop + ' '
+      + 'Q ' + (cx-scarfW/2) + ' ' + (scarfBot+2) + ' ' + (cx-scarfW/2+3) + ' ' + scarfBot + ' '
+      + 'L ' + (cx-scarfW/2+8) + ' ' + scarfBot + ' '
+      // 左尾端（垂下）
+      + 'L ' + (cx-scarfW/2+10) + ' ' + (scarfBot+12) + ' '
+      + 'L ' + (cx-scarfW/2+16) + ' ' + (scarfBot+12) + ' '
+      + 'L ' + (cx-scarfW/2+14) + ' ' + scarfBot + ' '
+      + 'L ' + (cx-scarfW/2+34) + ' ' + scarfBot + ' '
+      // 右尾端
+      + 'L ' + (cx+scarfW/2-14) + ' ' + scarfBot + ' '
+      + 'L ' + (cx+scarfW/2-16) + ' ' + (scarfBot+12) + ' '
+      + 'L ' + (cx+scarfW/2-10) + ' ' + (scarfBot+12) + ' '
+      + 'L ' + (cx+scarfW/2-8) + ' ' + scarfBot + ' '
+      + 'L ' + (cx+scarfW/2-3) + ' ' + scarfBot + ' '
+      + 'Q ' + (cx+scarfW/2) + ' ' + (scarfBot+2) + ' ' + (cx+scarfW/2) + ' ' + scarfTop + ' '
+      + 'Z';
+    s += '<path d="' + scarfPath + '" fill="' + scarfColor + '"/>';
+    // 围巾上方亮线（围巾顶部一道亮边）
+    s += '<rect x="' + (cx-scarfW/2) + '" y="' + (scarfTop+1) + '" width="' + scarfW + '" height="2" fill="' + shadeColor(scarfColor, 20) + '"/>';
+    // 围巾下方阴影
+    s += '<rect x="' + (cx-scarfW/2) + '" y="' + (scarfBot-2) + '" width="' + scarfW + '" height="2" fill="' + shadeColor(scarfColor, -20) + '"/>';
+
+    // ===== 身体（围巾下方露出的胸/腹部分，极短一截）=====
+    s += '<ellipse cx="' + cx + '" cy="82" rx="22" ry="4" fill="#12141a"/>';
+
     return s;
   }
 
-  // ===== 一个完整工位（正面平视） =====
-  // 从下到上：地面阴影 → 椅子（五星脚+气压杆+座面+椅背）→ 桌（横板+桌腿）→ 显示器（在桌面上方）→ 小马（坐在椅子上）
-  // 但 Marvis 的视觉是小马在椅子里，显示器在桌子后方桌子上，所以小马身体在椅子内，桌显示器在桌面上。
-  // 视觉顺序：椅子后部 → 桌横板横跨 → 显示器立在其上 → 小马坐在椅子里（被显示器在视觉前景遮挡若干）
+  // ===== 办公椅（白色座面 + 白色椅背 + 黑色气压杆 + 白色五星脚底盘 + 5 黑色轮子）=====
+  // 椅背顶部 y=110、底部 y=170；座面 y=170-180；气压杆 y=180-190；五星底盘 y=190-200；脚轮在 y=200
+  function chair() {
+    var s = '';
+
+    // 椅背（白色圆角矩形，带极淡边框）
+    s += '<rect x="78" y="110" width="44" height="60" rx="3" fill="#ffffff" stroke="#e2e5e9" stroke-width="0.6"/>';
+    // 椅背顶部高光（让边缘更立体）
+    s += '<path d="M 81 113 Q 100 110 119 113" fill="none" stroke="#ffffff" stroke-width="2"/>';
+
+    // 座面（白色矩形 + 灰边）
+    s += '<rect x="74" y="170" width="52" height="10" rx="2" fill="#ffffff" stroke="#d8dce2" stroke-width="0.6"/>';
+    // 座面底阴影线
+    s += '<rect x="74" y="178" width="52" height="2" fill="#e8eef3"/>';
+
+    // 黑色气压杆
+    s += '<rect x="98" y="180" width="4" height="12" fill="#2d333d"/>';
+
+    // 五星脚底盘（白色 + 灰边）
+    s += '<ellipse cx="100" cy="194" rx="22" ry="5" fill="#ffffff" stroke="#d8dce2" stroke-width="0.5"/>';
+
+    // 5 条五星脚辐条（白色，向外辐射）
+    for (var i = 0; i < 5; i++) {
+      var a = -Math.PI/2 + (i * Math.PI*2)/5;
+      var x2 = 100 + Math.cos(a)*22;
+      var y2 = 194 + Math.sin(a)*4;
+      s += '<line x1="100" y1="194" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/>';
+      // 末端脚轮（黑色小圆 + 顶面白点）
+      s += '<circle cx="' + x2.toFixed(1) + '" cy="' + y2.toFixed(1) + '" r="2.4" fill="#1a1d24"/>';
+      s += '<circle cx="' + (x2-0.5).toFixed(1) + '" cy="' + (y2-0.5).toFixed(1) + '" r="0.6" fill="#ffffff" opacity="0.5"/>';
+    }
+
+    return s;
+  }
+
+  // ===== 办公桌（白色横板 + 桌面下方 3 抽屉小柜）=====
+  // 桌面 y=98-108；抽屉柜 y=108-155
+  function desk() {
+    var s = '';
+
+    // 桌面（白色横板，带极淡下边线）
+    s += '<rect x="14" y="98" width="172" height="10" fill="#ffffff"/>';
+    // 桌面右侧细黑边
+    s += '<rect x="14" y="98" width="172" height="10" fill="none" stroke="#e8eef3" stroke-width="0.6"/>';
+    // 桌面下方 1px 阴影线
+    s += '<rect x="14" y="106" width="172" height="2" fill="#dee2e8"/>';
+
+    // 抽屉柜（白色矩形 + 3 个等宽抽屉）
+    var cab_x = 38, cab_y = 108, cab_w = 124, cab_h = 47;
+    s += '<rect x="' + cab_x + '" y="' + cab_y + '" width="' + cab_w + '" height="' + cab_h + '" fill="#ffffff" stroke="#e2e5e9" stroke-width="0.6"/>';
+    // 抽屉分隔
+    var dw = cab_w/3;
+    for (var i = 1; i < 3; i++) {
+      s += '<line x1="' + (cab_x+dw*i) + '" y1="' + cab_y + '" x2="' + (cab_x+dw*i) + '" y2="' + (cab_y+cab_h) + '" stroke="#e2e5e9" stroke-width="0.6"/>';
+    }
+    // 抽屉把手（小圆点，居于抽屉中心）
+    for (var j = 0; j < 3; j++) {
+      var handleX = cab_x + dw*j + dw/2;
+      var handleY = cab_y + cab_h/2;
+      s += '<circle cx="' + handleX + '" cy="' + handleY + '" r="1.4" fill="#9aa1ab"/>';
+    }
+
+    // 桌面极左侧斜角阴影（参考图桌脚有一块斜方块）
+    s += '<polygon points="14,108 14,118 8,118 8,108" fill="#e8eef3"/>';
+
+    return s;
+  }
+
+  // ===== 显示器（黑框 + 围巾色大色块屏幕 + 白色支架与底座）=====
+  function monitor(scarfColor) {
+    scarfColor = scarfColor || '#1a1d24';  // Agent 显示器用黑
+    var s = '';
+
+    // 底座（白色横椭圆）
+    s += '<ellipse cx="100" cy="96" rx="22" ry="3" fill="#ffffff" stroke="#d8dce2" stroke-width="0.5"/>';
+    // 支架（白色矩形脖子）
+    s += '<rect x="94" y="78" width="12" height="18" fill="#ffffff" stroke="#d8dce2" stroke-width="0.5"/>';
+
+    // 显示器外壳（黑色边框）
+    s += '<rect x="32" y="14" width="136" height="68" rx="2" fill="#1a1d24"/>';
+    // 屏幕内框（距外壳 4px）
+    s += '<rect x="36" y="18" width="128" height="60" rx="1" fill="#0c0d12"/>';
+    // 屏幕色块（围巾色，整屏）
+    s += '<rect x="36" y="18" width="128" height="60" fill="' + scarfColor + '"/>';
+    // 屏幕底部反光（白色斜条）
+    s += '<polygon points="40,76 156,76 152,80 44,80" fill="rgba(255,255,255,0.08)"/>';
+    // 屏幕顶部反光
+    s += '<rect x="36" y="18" width="128" height="3" fill="rgba(255,255,255,0.10)"/>';
+
+    return s;
+  }
+
+  // ===== 一个完整工位（椅子 → 桌子 → 显示器 → 小马 渲染顺序） =====
   function station(st, i) {
-    var scarfColor = (st && st.scarfColor) || '#3a6b5e';
+    var scarfColor = (st && st.scarfColor) || '#c0392b';
     var label = (st && st.label) || 'station';
 
-    // 整体地面阴影（大椭圆，柔化）
-    var ground =
-      '<ellipse cx="100" cy="200" rx="78" ry="12" fill="#94a3b8" opacity="0.16" filter="url(#groundBlur)"/>' +
-      '<ellipse cx="100" cy="200" rx="60" ry="8" fill="#94a3b8" opacity="0.22"/>';
-
-    // 渲染顺序：
-    // 1) 椅子的椅背部分（在桌和小马后面，看不到也行，先放确保被桌压住）
-    // 2) 桌子（在椅背前面，遮住椅背中下部）
-    // 3) 显示器（在桌面上方）
-    // 4) 小马头和围巾（从椅背顶部冒出来）
+    // 地面柔影（左侧大椭圆，符合参考图阴影方向）
+    var ground = ''
+      + '<ellipse cx="90" cy="206" rx="78" ry="6" fill="url(#marvisGroundShadow)"/>'
+      + '<ellipse cx="78" cy="206" rx="40" ry="3" fill="#94a3b8" opacity="0.18"/>';
 
     var inner = '';
-    // 椅子的五星脚 + 气压杆
-    inner += chair();
-    // 桌子（在椅背前）
-    inner += desk();
-    // 显示器（在桌面上方居中）
-    inner += monitor(scarfColor);
-    // 小马（在椅子上，围巾在显示器下方，头在显示器屏幕前显眼位置）
-    inner += horse(scarfColor);
+    inner += chair();            // 椅子（底层）
+    inner += desk();             // 桌子（在椅背前方遮挡）
+    inner += monitor(scarfColor);// 显示器（在桌面上）
+    inner += horse(scarfColor);  // 小马（最顶）
 
-    return '<svg viewBox="0 0 200 220" class="iso-station" role="img" aria-label="' + label + '">' +
-      shadowFilter() +
-      '<filter id="groundBlur"><feGaussianBlur stdDeviation="4"/></filter>' +
-      ground +
-      inner +
-      '</svg>';
+    return '<svg viewBox="0 0 200 220" class="iso-station" role="img" aria-label="' + label + '">'
+      + shadowDefs()
+      + ground
+      + inner
+      + '</svg>';
   }
 
   window.OfficeArt = {
