@@ -32,7 +32,13 @@ CATEGORIES = cfg.get("categories", [])
 CELLS = cfg.get("cells", [])
 DATE = datetime.date.today().isoformat()
 
-MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
+PRIMARY_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
+# 免费档单模型偶发排队/卡死（如 gemma-4-31b 高峰期长时间无响应），
+# 故按优先级尝试多个 :free 模型，任一可用即采用，显著提升每日生成成功率。
+MODELS = [PRIMARY_MODEL,
+          "google/gemma-4-26b-a4b-it:free",
+          "nvidia/nemotron-3-nano-30b-a3b:free",
+          "openai/gpt-oss-20b:free"]
 _BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 ENDPOINT = _BASE + "/chat/completions"
 API_KEY = os.environ.get("LLM_API_KEY", "")
@@ -110,57 +116,61 @@ def extract_json(text):
 def call_model(user):
     if not API_KEY:
         raise RuntimeError("缺少 LLM_API_KEY 环境变量（请在 Actions Secrets 中配置）")
-    payload = json.dumps({
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": user},
-        ],
-        "temperature": 0.7,
-        "max_tokens": 6000,
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        ENDPOINT, data=payload,
-        headers={
-            "Authorization": "Bearer " + API_KEY,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/znryddx/my-content-app",
-            "X-Title": "my-content-app",
-        },
-        method="POST",
-    )
+    messages = [
+        {"role": "system", "content": SYSTEM},
+        {"role": "user", "content": user},
+    ]
     last = None
-    backoff = [15, 30, 60, 120]
-    for attempt in range(len(backoff) + 1):
-        try:
-            with urllib.request.urlopen(req, timeout=180) as r:
-                data = json.loads(r.read().decode("utf-8"))
-            return extract_json(data["choices"][0]["message"]["content"])
-        except urllib.error.HTTPError as e:
-            detail = ""
+    for model in MODELS:
+        for attempt in range(2):  # 每个模型最多 2 次
+            payload = json.dumps({
+                "model": model,
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 6000,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                ENDPOINT, data=payload,
+                headers={
+                    "Authorization": "Bearer " + API_KEY,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://github.com/znryddx/my-content-app",
+                    "X-Title": "my-content-app",
+                },
+                method="POST",
+            )
             try:
-                detail = e.read().decode("utf-8", "ignore")[:500]
-            except Exception:
-                pass
-            print("[debug] HTTPError code=%s body=%s"
-                  % (getattr(e, "code", "?"), detail), flush=True)
-            if e.code in (401, 403, 404):
-                raise RuntimeError(
-                    "HTTP %d 致命错误（密钥无效或模型不存在），已停止重试：%s" % (e.code, detail))
-            wait = backoff[min(attempt, len(backoff) - 1)]
-            retry_after = e.headers.get("Retry-After") if hasattr(e, "headers") else None
-            if retry_after and str(retry_after).isdigit():
-                wait = int(retry_after) + 3
-            print("[warn] HTTP %d 第 %d 次调用失败（限流/临时），%ds 后重试：%s"
-                  % (e.code, attempt + 1, wait, detail), flush=True)
-            last = e
-        except Exception as e:
-            print("[warn] 第 %d 次调用失败（非HTTP）：%s" % (attempt + 1, e), flush=True)
-            last = e
-            wait = backoff[min(attempt, len(backoff) - 1)]
-        if attempt < len(backoff):
-            time.sleep(wait)
-    raise RuntimeError("模型调用多次失败（多因免费档限流），请稍后重试或换模型: %s" % last)
+                with urllib.request.urlopen(req, timeout=90) as r:
+                    data = json.loads(r.read().decode("utf-8"))
+                return extract_json(data["choices"][0]["message"]["content"])
+            except urllib.error.HTTPError as e:
+                detail = ""
+                try:
+                    detail = e.read().decode("utf-8", "ignore")[:400]
+                except Exception:
+                    pass
+                if e.code in (401, 403):
+                    raise RuntimeError("HTTP %d 致命错误（密钥无效），已停止：%s" % (e.code, detail))
+                if e.code == 404:
+                    print("[warn] 模型 %s 不存在，换下一个" % model, flush=True)
+                    break  # 跳到下一个模型
+                wait = [10, 20, 40][min(attempt, 2)]
+                ra = e.headers.get("Retry-After") if hasattr(e, "headers") else None
+                if ra and str(ra).isdigit():
+                    wait = int(ra) + 3
+                print("[warn] 模型 %s 第%d次失败(HTTP %d)：%ds后重试 %s"
+                      % (model, attempt + 1, e.code, wait, detail), flush=True)
+                last = e
+                if attempt < 1:
+                    time.sleep(wait)
+            except Exception as e:
+                print("[warn] 模型 %s 第%d次失败：%s" % (model, attempt + 1, e), flush=True)
+                last = e
+                if attempt < 1:
+                    time.sleep(10)
+        # 无论 404 跳出还是两次用尽，都尝试下一个模型
+        continue
+    raise RuntimeError("所有免费模型均失败（多因排队/限流），请稍后重试或换密钥: %s" % last)
 
 
 def fallback(cat):
@@ -241,6 +251,17 @@ def call_batch(batch):
         if attempt < 2:
             time.sleep(10)
     if result is None:
+        # 非破坏性：若当日该分类已有真实内容（如人工补种），不覆盖为占位
+        existing = os.path.join(ROOT, "data", cat["id"], DATE + ".json")
+        if os.path.exists(existing):
+            try:
+                ej = json.load(open(existing, encoding="utf-8"))
+                if all(str(c.get("body", "")).strip() and "暂未成功" not in str(c.get("body", ""))
+                       for c in ej.get("cells", [])):
+                    print("[skip] 分类 %s 已有真实内容，跳过占位覆盖" % cat["id"], flush=True)
+                    return
+            except Exception:
+                pass
         print("[error] 分类 %s 多次为空，写兜底占位" % cat["id"], flush=True)
         write_cat(cat, {cat["id"]: {"cells": fallback(cat)}})
         return
