@@ -25,14 +25,15 @@
     <div class="cv-content" id="cvContent"></div>
   </section>
 
-  <!-- 内容详情弹层 -->
-  <div class="detail-modal" id="detailModal" aria-hidden="true">
-    <div class="detail-top">
-      <button class="detail-btn" id="detailBack">‹ 返回列表</button>
-      <button class="detail-btn" id="detailCopy">复制全文</button>
+  <!-- 内容详情：底部弹出 sheet -->
+  <div class="detail-mask" id="detailMask"></div>
+  <div class="detail-sheet" id="detailModal" aria-hidden="true">
+    <div class="detail-sheet-head">
+      <div class="detail-sheet-title" id="detailTitle"></div>
+      <button class="detail-copy" id="detailCopy">复制全文</button>
     </div>
-    <h3 class="detail-title" id="detailTitle"></h3>
-    <div class="detail-body" id="detailBody"></div>
+    <div class="detail-sheet-body" id="detailBody"></div>
+    <button class="detail-known" id="detailKnown">知道了</button>
   </div>
 
   <!-- 日期选择弹层 -->
