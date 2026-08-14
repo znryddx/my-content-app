@@ -187,16 +187,22 @@ body {
 }
 
 /* ===== 详情弹层 ===== */
-.detail-modal {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  z-index: 100;
-  overflow: auto;
-  padding: 22px 28px 60px;
-  display: none;
+.detail-mask {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  z-index: 90; opacity: 0; visibility: hidden; transition: opacity 0.25s;
 }
-.detail-modal.show { display: block; }
+.detail-mask.show { opacity: 1; visibility: visible; }
+.detail-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: #fff; z-index: 100;
+  border-radius: 20px 20px 0 0;
+  max-height: 86vh; display: flex; flex-direction: column;
+  padding: 18px 22px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 34px rgba(0,0,0,0.14);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.detail-sheet.show { transform: translateY(0); }
 .detail-top {
   display: flex;
   justify-content: space-between;
@@ -219,22 +225,29 @@ body {
   font-family: inherit;
 }
 .detail-btn:hover { border-color: var(--accent); color: var(--accent); }
-.detail-title {
-  font-size: 19px;
-  font-weight: 600;
-  margin: 0 auto 14px;
-  color: var(--text);
-  max-width: 800px;
-  line-height: 1.5;
+.detail-sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 14px;
 }
-.detail-body {
-  font-size: 15px;
-  line-height: 1.85;
-  color: #4b5563;
-  white-space: pre-wrap;
-  max-width: 800px;
-  margin: 0 auto;
+.detail-sheet-title {
+  flex: 1; min-width: 0; font-size: 17px; font-weight: 600; color: var(--text);
+  line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.detail-copy {
+  flex: none; background: var(--accent); color: #fff; border: none;
+  border-radius: 10px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.detail-copy:active { opacity: 0.85; }
+.detail-sheet-body {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  font-size: 15px; line-height: 1.85; color: #4b5563; white-space: pre-wrap;
+}
+.detail-known {
+  flex: none; margin-top: 16px; width: 100%;
+  background: #f3f4f6; color: var(--text); border: none; border-radius: 12px;
+  padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.detail-known:active { background: #e5e7eb; }
 .detail-sheet-title { font-size: 17px; font-weight: 600; }
 
 /* ===== 日期选择 ===== */
