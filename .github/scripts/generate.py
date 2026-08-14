@@ -3,14 +3,14 @@
 """
 调用「OpenAI 兼容」的免费 LLM API，为 config.json 中每个分类按「分类 × 日期」生成 6 宫格内容。
 
-GitHub Models 已于 2026-07-30 退役。默认改用国内免费平台「硅基流动 SiliconFlow」
-（api.siliconflow.cn，国内可直连、注册免代理、新用户送免费额度），以绕开"本地无代理无法申请
-境外平台 key"的问题——注意：真正调 API 的是 GitHub Actions 境外服务器，本地能否上 Google 不影响生成。
+GitHub Models 已于 2026-07-30 退役。默认改用 OpenRouter（openrouter.ai，OpenAI 兼容、境外 Actions 调用稳定，
+提供 google/gemini-2.5-flash 等免费模型）。真正调 API 的是 GitHub Actions 境外服务器，本地无需代理。
 认证与端点通过环境变量注入（在 Actions 中以 Secret 提供，不写死在仓库里）：
-  LLM_API_KEY  必填，API Key（在 siliconflow.cn 注册获取）
-  LLM_BASE_URL 选填，OpenAI 兼容的 chat/completions 基址，默认硅基流动
-  LLM_MODEL    选填，模型名，默认 deepseek-ai/DeepSeek-V3（质量高；可换 Qwen/Qwen2.5-72B-Instruct 等免费模型）
-如需改用 OpenRouter / Gemini 等境外平台，覆盖 LLM_BASE_URL 与 LLM_MODEL 即可（但需本地能访问该站申请 key）。
+  LLM_API_KEY  必填，API Key（在 openrouter.ai 获取；亦兼容其他 OpenAI 兼容端点）
+  LLM_BASE_URL 选填，OpenAI 兼容的 chat/completions 基址，默认 OpenRouter
+  LLM_MODEL    选填，模型名，默认 google/gemma-4-31b-it:free（OpenRouter 真实 :free 免费档）。
+                注意：OpenRouter 上 google/gemini-2.5-flash 无 :free 档（按量计费），勿填带 :free 的 gemini-2.5-flash，会 404。
+如需改用国内免代理平台（如硅基流动 SiliconFlow），覆盖 LLM_BASE_URL 与 LLM_MODEL 即可。
 
 - 每个分类一次模型调用（当前 8 分类 = 8 次/天）。
 - 结果写入 data/<catId>/<date>.json，并维护 data/<catId>/dates.json（供 App 回看历史）。
@@ -19,6 +19,7 @@ import os
 import json
 import datetime
 import urllib.request
+import urllib.error
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -30,8 +31,8 @@ CATEGORIES = cfg.get("categories", [])
 CELLS = cfg.get("cells", [])
 DATE = datetime.date.today().isoformat()
 
-MODEL = os.environ.get("LLM_MODEL", "deepseek-ai/DeepSeek-V3")
-_BASE = os.environ.get("LLM_BASE_URL", "https://api.siliconflow.cn/v1").rstrip("/")
+MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
+_BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 ENDPOINT = _BASE + "/chat/completions"
 API_KEY = os.environ.get("LLM_API_KEY", "")
 
@@ -109,17 +110,36 @@ def call_model(user):
         method="POST",
     )
     last = None
-    for attempt in range(3):
+    backoff = [20, 40, 80, 160, 300, 600]
+    for attempt in range(len(backoff) + 1):
         try:
             with urllib.request.urlopen(req, timeout=180) as r:
                 data = json.loads(r.read().decode("utf-8"))
             return extract_json(data["choices"][0]["message"]["content"])
-        except Exception as e:
+        except urllib.error.HTTPError as e:
+            detail = ""
+            try:
+                detail = e.read().decode("utf-8", "ignore")[:500]
+            except Exception:
+                pass
+            if e.code in (401, 403, 404):
+                raise RuntimeError(
+                    "HTTP %d 致命错误（密钥无效或模型不存在），已停止重试：%s" % (e.code, detail))
+            # 429 限流：尊重 Retry-After，否则用指数退避
+            wait = backoff[min(attempt, len(backoff) - 1)]
+            retry_after = e.headers.get("Retry-After") if hasattr(e, "headers") else None
+            if retry_after and str(retry_after).isdigit():
+                wait = int(retry_after) + 3
+            print("[warn] HTTP %d 第 %d 次调用失败（限流/临时），%ds 后重试：%s"
+                  % (e.code, attempt + 1, wait, detail))
             last = e
-            print("[warn] 第 %d 次调用失败：%s" % (attempt + 1, e))
-            if attempt < 2:
-                time.sleep(8)
-    raise RuntimeError("模型调用多次失败: %s" % last)
+        except Exception as e:
+            print("[warn] 第 %d 次调用失败（非HTTP）：%s" % (attempt + 1, e))
+            last = e
+            wait = backoff[min(attempt, len(backoff) - 1)]
+        if attempt < len(backoff):
+            time.sleep(wait)
+    raise RuntimeError("模型调用多次失败（多因免费档限流），请稍后重试或换模型: %s" % last)
 
 
 def fallback(cat):
@@ -180,8 +200,10 @@ def main():
     if not API_KEY:
         print("[fatal] 未设置 LLM_API_KEY，无法生成。请在仓库 Settings → Secrets → Actions 添加 LLM_API_KEY。")
         return
-    for cat in CATEGORIES:
+    for i, cat in enumerate(CATEGORIES):
         write_cat(cat)
+        if i < len(CATEGORIES) - 1:
+            time.sleep(30)  # 分类之间间隔，遵守免费档 ~1 次/分钟 RPM 限制
     print("All done.")
 
 
