@@ -110,6 +110,16 @@
       card.addEventListener('click', function () { openCategory(cat.id); });
       grid.appendChild(card);
     });
+
+    // 追加「图片」板块（独立画廊，不参与每日内容生成）
+    var ic = document.createElement('div');
+    ic.className = 'station-card img-tile';
+    ic.innerHTML =
+      '<div class="station-photo-wrap img-tile-wrap">' + cameraSVG() + '</div>' +
+      '<div class="station-label">图片</div>' +
+      '<div class="station-hint">上传器物图 →</div>';
+    ic.addEventListener('click', openImages);
+    grid.appendChild(ic);
   }
 
   // ---------- 品类页：内容卡片 ----------
@@ -217,6 +227,94 @@
     s.setAttribute('aria-hidden', 'true');
   }
 
+  // ---------- 图片板块（画廊 + 上传）----------
+  function cameraSVG() {
+    return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#9aa3b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="7" y="14" width="34" height="26" rx="4"/>' +
+      '<path d="M17 14l2.5-4h9L31 14"/>' +
+      '<circle cx="24" cy="27" r="7"/>' +
+      '<path d="M24 23v8M20 27h8"/></svg>';
+  }
+  function openImages() {
+    $('#imgTitle').textContent = '图片';
+    var b = $('#imgBoard');
+    b.classList.add('open');
+    b.setAttribute('aria-hidden', 'false');
+    b.scrollTop = 0;
+    loadGallery();
+  }
+  function closeImages() {
+    var b = $('#imgBoard');
+    b.classList.remove('open');
+    b.setAttribute('aria-hidden', 'true');
+  }
+  function loadGallery() {
+    fetch('./assets/uploads/manifest.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(renderGallery)
+      .catch(function () { renderGallery([]); });
+  }
+  function renderGallery(list) {
+    var grid = $('#imgGrid');
+    if (!list || !list.length) {
+      grid.innerHTML = '<div class="img-empty">还没有图片<br><span>点右上角「＋ 上传」把你的器物图传上来，方便后续各板块内容推进</span></div>';
+      return;
+    }
+    grid.innerHTML = '';
+    list.forEach(function (it) {
+      var cell = document.createElement('div');
+      cell.className = 'img-cell';
+      cell.innerHTML = '<img class="img-thumb" src="' + esc(it.url) + '" alt="' + esc(it.name) + '" loading="lazy">' +
+        '<div class="img-name">' + esc(it.name) + '</div>';
+      cell.addEventListener('click', function () { window.open(it.url, '_blank'); });
+      grid.appendChild(cell);
+    });
+  }
+  function resizeImageFile(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, maxDim / Math.max(w, h));
+        var cw = Math.round(w * scale), ch = Math.round(h * scale);
+        var cvs = document.createElement('canvas');
+        cvs.width = cw; cvs.height = ch;
+        cvs.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        cvs.toBlob(function (blob) { if (blob) resolve(blob); else reject(new Error('编码失败')); }, 'image/jpeg', quality);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('图片读取失败')); };
+      img.src = url;
+    });
+  }
+  function uploadFiles(files) {
+    var ep = (cfg && cfg.upload_endpoint) || '';
+    if (!ep) { toast('上传服务部署中，请稍候'); return; }
+    var arr = Array.prototype.slice.call(files || []);
+    if (!arr.length) return;
+    var idx = 0;
+    toast('上传中 1/' + arr.length);
+    function next() {
+      if (idx >= arr.length) { toast('上传完成 ✓'); loadGallery(); return; }
+      var f = arr[idx]; idx++;
+      toast('上传中 ' + idx + '/' + arr.length);
+      resizeImageFile(f, 1600, 0.82).then(function (blob) {
+        var fd = new FormData();
+        var jpg = (f.name || 'image').replace(/\.[^.]+$/, '') + '.jpg';
+        fd.append('file', blob, jpg);
+        return fetch(ep, { method: 'POST', body: fd });
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.error) throw new Error(j.error);
+        setTimeout(next, 250);
+      }).catch(function (e) {
+        toast('上传失败：' + e.message);
+        setTimeout(next, 250);
+      });
+    }
+    next();
+  }
+
   // ---------- 启动 ----------
   fetch('./config.json', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
@@ -243,6 +341,10 @@
         setTimeout(function () { btn.textContent = old; }, 1500);
       });
       $('#dateClose').addEventListener('click', hideDateSheet);
+
+      $('#imgBack').addEventListener('click', closeImages);
+      $('#imgUpload').addEventListener('click', function () { $('#imgFile').click(); });
+      $('#imgFile').addEventListener('change', function (e) { uploadFiles(e.target.files); e.target.value = ''; });
     })
     .catch(function (e) {
       $('#scene').innerHTML = '<div class="station-grid"><div class="station-card"><div class="station-label">配置加载失败：' + esc(e.message) + '</div></div></div>';
