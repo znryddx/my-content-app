@@ -110,7 +110,7 @@ def call_model(user):
         method="POST",
     )
     last = None
-    backoff = [20, 40, 80, 160, 300, 600]
+    backoff = [15, 30, 60, 120]
     for attempt in range(len(backoff) + 1):
         try:
             with urllib.request.urlopen(req, timeout=180) as r:
@@ -122,19 +122,20 @@ def call_model(user):
                 detail = e.read().decode("utf-8", "ignore")[:500]
             except Exception:
                 pass
+            print("[debug] HTTPError code=%s headers=%s body=%s"
+                  % (getattr(e, "code", "?"), dict(getattr(e, "headers", {}) or {}), detail), flush=True)
             if e.code in (401, 403, 404):
                 raise RuntimeError(
                     "HTTP %d 致命错误（密钥无效或模型不存在），已停止重试：%s" % (e.code, detail))
-            # 429 限流：尊重 Retry-After，否则用指数退避
             wait = backoff[min(attempt, len(backoff) - 1)]
             retry_after = e.headers.get("Retry-After") if hasattr(e, "headers") else None
             if retry_after and str(retry_after).isdigit():
                 wait = int(retry_after) + 3
             print("[warn] HTTP %d 第 %d 次调用失败（限流/临时），%ds 后重试：%s"
-                  % (e.code, attempt + 1, wait, detail))
+                  % (e.code, attempt + 1, wait, detail), flush=True)
             last = e
         except Exception as e:
-            print("[warn] 第 %d 次调用失败（非HTTP）：%s" % (attempt + 1, e))
+            print("[warn] 第 %d 次调用失败（非HTTP）：%s" % (attempt + 1, e), flush=True)
             last = e
             wait = backoff[min(attempt, len(backoff) - 1)]
         if attempt < len(backoff):
@@ -172,7 +173,7 @@ def write_cat(cat):
             ordered.append({"id": meta["id"], "title": meta["title"], "body": c.get("body", "")})
         content = {"date": DATE, "category": cat.get("label", ""), "cells": ordered}
     except Exception as e:
-        print("[error] %s 生成失败，使用兜底：%s" % (cat_id, e))
+        print("[error] %s 生成失败，使用兜底：%s" % (cat_id, e), flush=True)
         content = {"date": DATE, "category": cat.get("label", ""), "cells": fallback(cat)}
 
     with open(os.path.join(folder, DATE + ".json"), "w", encoding="utf-8") as f:
