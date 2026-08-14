@@ -3,11 +3,14 @@
 """
 调用「OpenAI 兼容」的免费 LLM API，为 config.json 中每个分类按「分类 × 日期」生成 6 宫格内容。
 
-GitHub Models 已于 2026-07-30 退役，故改用任意 OpenAI 兼容端点（OpenRouter / Groq / Gemini 等）。
+GitHub Models 已于 2026-07-30 退役。默认改用国内免费平台「硅基流动 SiliconFlow」
+（api.siliconflow.cn，国内可直连、注册免代理、新用户送免费额度），以绕开"本地无代理无法申请
+境外平台 key"的问题——注意：真正调 API 的是 GitHub Actions 境外服务器，本地能否上 Google 不影响生成。
 认证与端点通过环境变量注入（在 Actions 中以 Secret 提供，不写死在仓库里）：
-  LLM_API_KEY  必填，API Key
-  LLM_BASE_URL 选填，OpenAI 兼容的 chat/completions 基址，默认 OpenRouter
-  LLM_MODEL    选填，模型名，默认免费模型 google/gemini-2.5-flash
+  LLM_API_KEY  必填，API Key（在 siliconflow.cn 注册获取）
+  LLM_BASE_URL 选填，OpenAI 兼容的 chat/completions 基址，默认硅基流动
+  LLM_MODEL    选填，模型名，默认 deepseek-ai/DeepSeek-V3（质量高；可换 Qwen/Qwen2.5-72B-Instruct 等免费模型）
+如需改用 OpenRouter / Gemini 等境外平台，覆盖 LLM_BASE_URL 与 LLM_MODEL 即可（但需本地能访问该站申请 key）。
 
 - 每个分类一次模型调用（当前 8 分类 = 8 次/天）。
 - 结果写入 data/<catId>/<date>.json，并维护 data/<catId>/dates.json（供 App 回看历史）。
@@ -27,8 +30,8 @@ CATEGORIES = cfg.get("categories", [])
 CELLS = cfg.get("cells", [])
 DATE = datetime.date.today().isoformat()
 
-MODEL = os.environ.get("LLM_MODEL", "google/gemini-2.5-flash")
-_BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+MODEL = os.environ.get("LLM_MODEL", "deepseek-ai/DeepSeek-V3")
+_BASE = os.environ.get("LLM_BASE_URL", "https://api.siliconflow.cn/v1").rstrip("/")
 ENDPOINT = _BASE + "/chat/completions"
 API_KEY = os.environ.get("LLM_API_KEY", "")
 
