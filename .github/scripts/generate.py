@@ -49,19 +49,29 @@ def fill(tpl, cat):
                .replace("{strategy}", cat.get("strategy", cat.get("label", ""))))
 
 
-def build_user(cat):
+def build_user(cat, cells, feed_text=None):
     items = []
-    for c in CELLS:
+    for c in cells:
         items.append("%s｜%s：%s" % (c["id"], c["title"], fill(c.get("prompt", ""), cat)))
     joined = "\n".join("%d. %s" % (i + 1, p) for i, p in enumerate(items))
-    return (
+    head = (
         "请为分类「%s」生成今日（%s）内容。\n" % (cat.get("label", ""), DATE) +
         "该分类主题：%s\n" % cat.get("theme", "") +
-        "全案营销策略主题：%s\n\n" % cat.get("strategy", "") +
+        "全案营销策略主题：%s\n\n" % cat.get("strategy", "")
+    )
+    if feed_text:
+        head += (
+            "【重要】以下是脚本抓取的今日真实热点素材（已含来源），请严格基于这些真实素材撰写"
+            "「拍卖行资讯 / 财经新闻 / 热点新闻 / 文创电商趋势」等模块，不得凭空编造数据、行情或新闻；"
+            "素材未覆盖的模块（金句、种草文案、标题、策略等）可正常发挥。\n"
+            "真实素材如下：\n%s\n\n" % feed_text
+        )
+    head += (
         "【关键】必须严格基于上面的 theme 与 strategy 写作，禁止挪用其他品类的通用话术，"
         "依次生成以下版块：\n%s\n\n" % joined +
         '只返回严格 JSON：{"cells":[{"id":<对应上面 id>,"title":<版块名>,"body":<正文>}...]}，不要额外文字。'
     )
+    return head
 
 
 def extract_json(text):
@@ -116,14 +126,25 @@ def fallback(cat):
 
 def write_cat(cat):
     cat_id = cat["id"]
+    cells = cat.get("cells") or CELLS
     folder = os.path.join(ROOT, "data", cat_id)
     os.makedirs(folder, exist_ok=True)
+    feed_text = None
+    if cat_id == "brief":
+        feed_path = os.path.join(ROOT, "data", "feed", DATE + ".txt")
+        if os.path.exists(feed_path):
+            try:
+                feed_text = open(feed_path, encoding="utf-8").read()
+                if len(feed_text) > 4000:
+                    feed_text = feed_text[:4000] + "\n...(素材过长已截断)"
+            except Exception:
+                feed_text = None
     try:
-        result = call_model(build_user(cat))
-        cells = result.get("cells", [])
-        by_id = {c.get("id"): c for c in cells}
+        result = call_model(build_user(cat, cells, feed_text))
+        gen_cells = result.get("cells", [])
+        by_id = {c.get("id"): c for c in gen_cells}
         ordered = []
-        for meta in CELLS:
+        for meta in cells:
             c = by_id.get(meta["id"]) or {"id": meta["id"], "title": meta["title"], "body": ""}
             ordered.append({"id": meta["id"], "title": meta["title"], "body": c.get("body", "")})
         content = {"date": DATE, "category": cat.get("label", ""), "cells": ordered}

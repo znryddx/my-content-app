@@ -1,0 +1,46 @@
+name: 每日内容生成（零成本）
+
+on:
+  schedule:
+    # UTC 00:00 = 北京时间 08:00 每日自动生成
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 抓取当日热点（脚本联网，0 成本）
+        run: python .github/scripts/fetch_feed.py
+
+      - name: 生成内容（免费模型，0 成本）
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemini-2.5-flash' }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
+        run: python .github/scripts/generate.py
+
+      - name: 提交并触发 Pages 部署
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "无内容变化，跳过提交"
+          else
+            git commit -m "daily content $(date +%F) [bot]"
+            git push
+          fi
