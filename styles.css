@@ -88,6 +88,21 @@ body {
 }
 .station-card:hover .station-hint { color: var(--muted); }
 
+/* ===== 真实图片优先（覆盖 SVG 工位）===== */
+.station-photo-wrap { width: 100%; }
+.station-photo {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 30px -12px rgba(15,23,42,0.18);
+}
+.station-svg { width: 100%; }
+.station-svg svg.iso-station { width: 100%; max-width: 320px; height: auto; }
+
 /* ===== 品类视图（全屏） ===== */
 .cv {
   position: fixed;
