@@ -1,0 +1,8 @@
+name = "claw-upload"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Worker 仅作代理：GH_TOKEN 等密钥通过 `wrangler secret put` 或 deploy_worker.py 注入，不要写在这里
+[vars]
+GH_REPO = "znryddx/my-content-app"
+GH_BRANCH = "main"
