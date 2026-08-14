@@ -25,6 +25,26 @@
   }
   function keyOf(catId, date, cellId) { return catId + '|' + date + '|' + cellId; }
 
+  // 各品类诗意副标题（仅展示用，不影响数据）
+  var CAT_DESC = {
+    brief:    '每日内容全案',
+    bracelet: '腕间珠玉',
+    incense:  '一缕清欢',
+    burner:   '焚香之器',
+    statue:   '庄严妙相',
+    agarwood: '众香之首',
+    inlay:    '嵌饰之工',
+    teaware:  '茶席清供',
+    gift:     '馈赠清雅'
+  };
+  var WK = ['日','一','二','三','四','五','六'];
+  function dateLabel(d) {
+    var p = String(d).split('-');
+    if (p.length !== 3) return d;
+    var dt = new Date(+p[0], +p[1] - 1, +p[2]);
+    return d + '　星期' + WK[dt.getDay()];
+  }
+
   function toast(msg) {
     var t = document.getElementById('toast'); if (!t) return;
     t.textContent = msg; t.classList.add('show');
@@ -66,53 +86,39 @@
     });
   }
 
-  // ---------- 首页（Marvis 布局：左休闲区竖排 + 右双列工位网格）—— 俯视写实图片 ----------
+  // ---------- 首页（卷首 + 品类目录，宣纸文人风，无配图）----------
   function renderHome() {
     hideRedbar(); hideAddBtn();
     scene.innerHTML = '';
-    var home = (cfg && cfg.home) || {};
+    var today = todayStr();
 
-    // 主容器：左休闲 + 右工位
-    var layout = document.createElement('div'); layout.className = 'home-layout';
+    var home = document.createElement('div'); home.className = 'home';
+    home.innerHTML =
+      '<div class="intro">' +
+        '<div class="intro-rule"></div>' +
+        '<h1 class="intro-title">每日内容志</h1>' +
+        '<div class="intro-en">Eastern Objects · Daily</div>' +
+        '<div class="intro-date">' + dateLabel(today) + '</div>' +
+      '</div>' +
+      '<div class="sec-label">品类目录</div>' +
+      '<div class="cat-grid" id="catGrid"></div>';
+    scene.appendChild(home);
 
-    // ===== 左侧休闲区（俯视写实图片：咖啡吧 / 跑步机 / 绿植角）=====
-    var decorImages = { kitchenette: 'assets/coffee.webp', treadmill: 'assets/treadmill.webp', toilet_zone: 'assets/plant.webp' };
-    var decorLabels = { kitchenette: '茶水间', treadmill: '健身区', toilet_zone: '绿植角' };
-
-    if (home.decor && home.decor.length) {
-      var lz = document.createElement('div'); lz.className = 'leisure-zone';
-      home.decor.forEach(function (d) {
-        var it = document.createElement('div');
-        it.className = 'leisure-item' + (d === 'toilet_zone' ? ' clickable' : '');
-        var imgSrc = decorImages[d] || '';
-        it.innerHTML =
-          '<div class="cap">' + esc(decorLabels[d] || d) + '</div>' +
-          (imgSrc ? '<img class="scene-img" src="' + esc(imgSrc) + '" alt="' + esc(d) + '" loading="lazy"/>' : '<div class="img-placeholder">' + esc(d) + '</div>');
-        if (d === 'toilet_zone') it.addEventListener('click', openDatePicker);
-        lz.appendChild(it);
-      });
-      layout.appendChild(lz);
-    }
-
-    // ===== 右侧工位区（固定双列网格 —— 每个工位用同一张俯视工位图 + 分类标签）=====
-    var sa = document.createElement('div'); sa.className = 'station-area';
-    var grid = document.createElement('div'); grid.className = 'station-grid';
+    var grid = home.querySelector('#catGrid');
     (cfg.categories || []).forEach(function (st, i) {
-      var card = document.createElement('div'); card.className = 'station';
-      var stImg = st.image || 'assets/workstation.webp';  // 默认统一工位图；config 可覆盖为自定义图
+      var card = document.createElement('div'); card.className = 'cat-card';
+      var desc = CAT_DESC[st.id] || '';
       card.innerHTML =
-        '<div class="label">' + esc(st.label) + '</div>' +
-        '<img class="scene-img" src="' + esc(stImg) + '" alt="' + esc(st.label) + '" loading="lazy"/>' +
-        '<div class="hint">点击进入 →</div>';
+        '<span class="cat-idx">' + ('0' + (i + 1)).slice(-2) + '</span>' +
+        '<div class="cat-main"><div class="cat-name">' + esc(st.label) + '</div>' +
+        (desc ? '<div class="cat-sub">' + esc(desc) + '</div>' : '') + '</div>' +
+        '<span class="cat-arrow">阅览 ›</span>';
       card.addEventListener('click', function () {
         currentCat = st;
         latestDate(st.id).then(function (d) { currentDate = d; renderContent(); });
       });
       grid.appendChild(card);
     });
-    sa.appendChild(grid);
-    layout.appendChild(sa);
-    scene.appendChild(layout);
     window.scrollTo(0, 0);
   }
 
@@ -123,9 +129,9 @@
     scene.innerHTML = '';
     var wrap = document.createElement('div'); wrap.className = 'cv';
     wrap.innerHTML =
-      '<div class="cv-top"><span class="back" id="back">← 工位</span>' +
+      '<div class="cv-top"><span class="back" id="back">← 返回</span>' +
       '<span class="cv-title">' + esc(cat.label) + '</span>' +
-      '<span class="cv-date" id="dated">' + date + ' ▾</span></div>' +
+      '<span class="cv-date" id="dated"><b>' + date + '</b> ▾</span></div>' +
       '<div class="grid6" id="grid6"></div>';
     scene.appendChild(wrap);
 
