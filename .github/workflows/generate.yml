@@ -29,7 +29,7 @@ jobs:
       - name: 生成内容（免费模型，0 成本）
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemini-2.5-flash' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
         run: python .github/scripts/generate.py
 
