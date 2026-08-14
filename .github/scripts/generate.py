@@ -47,7 +47,7 @@ SYSTEM = (
     "不可把同一组金句复制给多个分类；趋势要有该品类的真实电商体感（品类词、价位带、平台差异）。"
 )
 
-BATCH_SIZE = 3  # 每批分类数；9 分类 => 全天仅 3 次 API 调用，避开免费档限流
+BATCH_SIZE = 1  # 每分类单独生成：避免免费模型在批量时掏空前几个分类的 body；靠分类间间隔+重试避开限流
 
 
 def fill(tpl, cat):
@@ -117,7 +117,7 @@ def call_model(user):
             {"role": "user", "content": user},
         ],
         "temperature": 0.7,
-        "max_tokens": 4096,
+        "max_tokens": 6000,
     }).encode("utf-8")
     req = urllib.request.Request(
         ENDPOINT, data=payload,
@@ -175,11 +175,18 @@ def write_cat(cat, cells_map):
     folder = os.path.join(ROOT, "data", cat_id)
     os.makedirs(folder, exist_ok=True)
     gen = cells_map.get(cat_id, {}).get("cells", []) if isinstance(cells_map, dict) else []
+    # 兜底安全网：模型整体返回空时，用占位文案而非空 body（空 body 会被 App 误判成"生成中"）
+    if not gen:
+        gen = fallback(cat)
     by_id = {c.get("id"): c for c in gen}
     ordered = []
     for meta in cells_meta:
         c = by_id.get(meta["id"]) or {"id": meta["id"], "title": meta["title"], "body": ""}
-        ordered.append({"id": meta["id"], "title": meta["title"], "body": c.get("body", "")})
+        body = str(c.get("body", "")).strip()
+        # 空 body 也用占位，避免 App 显示"生成中…"兜底
+        if not body:
+            body = "（今日自动生成暂未成功，将在下次定时任务重试）"
+        ordered.append({"id": meta["id"], "title": meta["title"], "body": body})
     content = {"date": DATE, "category": cat.get("label", ""), "cells": ordered}
 
     with open(os.path.join(folder, DATE + ".json"), "w", encoding="utf-8") as f:
@@ -197,22 +204,47 @@ def write_cat(cat, cells_map):
     dates.sort()
     with open(dates_path, "w", encoding="utf-8") as f:
         json.dump(dates, f, ensure_ascii=False, indent=2)
-    real = sum(1 for c in ordered if "暂未成功" not in c["body"])
+    real = sum(1 for c in ordered if str(c.get("body", "")).strip() and "暂未成功" not in c["body"])
     print("Wrote data/%s/%s.json  (%d/%d 真实, %d 占位)"
           % (cat_id, DATE, real, len(ordered), len(ordered) - real), flush=True)
 
 
+def _cat_has_content(res, cat_id, n_meta):
+    """判断模型返回中该分类是否每个版块都有非空 body。"""
+    if not isinstance(res, dict):
+        return False
+    gen = res.get(cat_id, {}).get("cells", []) if cat_id in res else res.get("cells", [])
+    if not gen or len(gen) < n_meta:
+        return False
+    return all(str(c.get("body", "")).strip() for c in gen)
+
+
 def call_batch(batch):
-    try:
-        result = call_model(build_batch(batch))
-    except Exception as e:
-        print("[error] 批量生成失败，整批兜底：%s" % e, flush=True)
-        result = {}
-    for cat in batch:
+    # 每批仅一个分类（BATCH_SIZE=1）：聚焦单分类，避免免费模型在批量时掏空前几个分类
+    cat = batch[0]
+    cells_meta = cat.get("cells") or CELLS
+    n = len(cells_meta)
+    result = None
+    for attempt in range(3):
+        try:
+            res = call_model(build_batch([cat]))
+        except Exception as e:
+            print("[error] 生成失败：%s" % e, flush=True)
+            res = {}
         # 兼容模型偶尔返回单分类旧格式 {"cells":[...]}
-        if isinstance(result, dict) and "cells" in result and len(batch) == 1:
-            result = {batch[0]["id"]: result}
-        write_cat(cat, result)
+        if isinstance(res, dict) and "cells" in res and cat["id"] not in res:
+            res = {cat["id"]: res}
+        if _cat_has_content(res, cat["id"], n):
+            result = res
+            break
+        print("[warn] 第 %d 次：分类 %s 存在空 body 或结构不全，重试" % (attempt + 1, cat["id"]), flush=True)
+        if attempt < 2:
+            time.sleep(10)
+    if result is None:
+        print("[error] 分类 %s 多次为空，写兜底占位" % cat["id"], flush=True)
+        write_cat(cat, {cat["id"]: {"cells": fallback(cat)}})
+        return
+    write_cat(cat, result)
 
 
 def chunked(seq, n):
@@ -233,7 +265,7 @@ def main():
         print("--- 第 %d/%d 批：%s ---" % (i + 1, len(batches), ",".join(c["id"] for c in batch)), flush=True)
         call_batch(batch)
         if i < len(batches) - 1:
-            time.sleep(45)  # 批间间隔，进一步避开免费档 RPM
+            time.sleep(20)  # 分类间间隔，进一步避开免费档 RPM
     print("All done.")
 
 
