@@ -25,18 +25,16 @@ jobs:
 
       - name: 抓取当日热点（脚本联网，0 成本）
         run: python .github/scripts/fetch_feed.py
-        continue-on-error: true
 
       - name: 生成内容（免费模型，0 成本）
+        continue-on-error: true
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
         run: python .github/scripts/generate.py
-        continue-on-error: true
 
       - name: 提交并触发 Pages 部署
-        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
