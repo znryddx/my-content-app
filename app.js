@@ -47,6 +47,7 @@
   var currentCat = null;
   var currentDate = null;
   var currentHubDate = null;
+  var currentDailyDate = null;
   var currentDetail = { title: '', body: '' };
 
   // ---------- 工具 ----------
@@ -153,6 +154,16 @@
       '<div class="station-hint">每日各行业资讯 →</div>';
     hc.addEventListener('click', openHub);
     grid.appendChild(hc);
+
+    // 追加「日常」板块（活人感灵感板，风趣幽默，由 AI 策展）
+    var dc = document.createElement('div');
+    dc.className = 'station-card daily-tile';
+    dc.innerHTML =
+      '<div class="station-photo-wrap hub-tile-wrap">' + dailyGlyphSVG() + '</div>' +
+      '<div class="station-label">日常</div>' +
+      '<div class="station-hint">每日生活灵感 →</div>';
+    dc.addEventListener('click', openDaily);
+    grid.appendChild(dc);
   }
 
   // ---------- 品类页：内容卡片 ----------
@@ -329,6 +340,75 @@
     var b = $('#hubBoard');
     b.classList.remove('open');
     b.setAttribute('aria-hidden', 'true');
+  }
+  // ---------- 日常板块（活人感灵感板：风趣幽默，由 AI 策展，不教拍摄）----------
+  function dailyGlyphSVG() {
+    return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="24" cy="24" r="9"/>' +
+      '<path d="M24 6v5M24 37v5M6 24h5M37 24h5M11 11l3.5 3.5M33.5 33.5L37 37M37 11l-3.5 3.5M14.5 33.5L11 37"/>' +
+      '<circle cx="21" cy="22" r="1.1" fill="#f59e0b" stroke="none"/><circle cx="27" cy="22" r="1.1" fill="#f59e0b" stroke="none"/>' +
+      '<path d="M20.5 27q3.5 3 7 0"/></svg>';
+  }
+  function openDaily() {
+    var b = $('#dailyBoard');
+    $('#dailyTitle').textContent = '日常';
+    b.classList.add('open');
+    b.setAttribute('aria-hidden', 'false');
+    b.scrollTop = 0;
+    var c = $('#dailyContent');
+    c.innerHTML = '<div class="content-card"><div class="content-title">加载中…</div></div>';
+    fetchJSON(DATA + 'daily/dates.json').then(function (dates) {
+      var date = (dates && dates.length) ? dates[dates.length - 1] : todayStr();
+      loadDaily(date);
+    });
+  }
+  function loadDaily(date) {
+    currentDailyDate = date;
+    $('#dailyDate').textContent = dateLabel(date).slice(0, 10) + ' ▾';
+    var c = $('#dailyContent');
+    c.innerHTML = '<div class="content-card"><div class="content-title">加载中…</div></div>';
+    fetchJSON(DATA + 'daily/' + date + '.json').then(function (data) {
+      var cells = (data && data.cells) ? data.cells : [];
+      c.innerHTML = '';
+      if (!cells.length) {
+        c.innerHTML = '<div class="content-card"><div class="content-body">今日灵感生成中…（每日由 AI 策展刷新）</div></div>';
+        return;
+      }
+      cells.forEach(function (cell) {
+        var title = cell.title || cell.id || '灵感';
+        var body = cell.body || '今日内容生成中…';
+        var card = document.createElement('div');
+        card.className = 'content-card';
+        card.innerHTML = '<div class="content-title">' + esc(title) + '</div><div class="content-body">' + esc(body) + '</div>';
+        card.addEventListener('click', function () { openDetail(title, body); });
+        c.appendChild(card);
+      });
+    });
+  }
+  function closeDaily() {
+    var b = $('#dailyBoard');
+    b.classList.remove('open');
+    b.setAttribute('aria-hidden', 'true');
+  }
+  function openDailyDatePicker() {
+    fetchJSON(DATA + 'daily/dates.json').then(function (dates) {
+      var list = $('#dateList');
+      if (!dates || !dates.length) {
+        list.innerHTML = '<div class="date-chip">暂无历史，部署后每日自动生成</div>';
+      } else {
+        list.innerHTML = '';
+        dates.forEach(function (dt) {
+          var ch = document.createElement('div');
+          ch.className = 'date-chip' + (dt === currentDailyDate ? ' active' : '');
+          ch.textContent = dateLabel(dt) + (dt === todayStr() ? '（今天）' : '');
+          ch.addEventListener('click', function () { hideDateSheet(); loadDaily(dt); });
+          list.appendChild(ch);
+        });
+      }
+      var s = $('#dateSheet');
+      s.classList.add('show');
+      s.setAttribute('aria-hidden', 'false');
+    });
   }
   // 汇总日期选择：复用全局 #dateSheet / #dateList 弹层
   function openHubDatePicker() {
@@ -539,6 +619,8 @@
       $('#imgBack').addEventListener('click', closeImages);
       $('#hubBack').addEventListener('click', closeHub);
       $('#hubDate').addEventListener('click', openHubDatePicker);
+      $('#dailyBack').addEventListener('click', closeDaily);
+      $('#dailyDate').addEventListener('click', openDailyDatePicker);
       $('#imgUpload').addEventListener('click', function () { toast('在聊天框发图给我，我帮你存进共享图库'); });
     })
     .catch(function (e) {
