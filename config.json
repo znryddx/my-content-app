@@ -178,5 +178,5 @@
       "toilet_zone"
     ]
   },
-  "upload_endpoint": ""
+  "upload_endpoint": "https://marvis-upload.jiangxinyawu.workers.dev/upload"
 }
