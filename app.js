@@ -390,7 +390,8 @@
         if (j && j.error) throw new Error(j.error);
         setTimeout(next, 200);
       }).catch(function (e) {
-        toast('上传失败：' + e.message + '（已转本机保存）');
+        console.error('[上传] Worker 远程上传失败：', e);
+        toast('远程上传失败：' + e.message + '（已存本机，我看不到）');
         fileToDataUrl(f, 1600, 0.82).then(function (du) {
           return idbPut({ id: 'l_' + Date.now() + '_' + idx, name: f.name || ('图片' + idx), url: du, ts: Date.now(), local: true });
         }).then(function () { setTimeout(next, 200); }).catch(function () { setTimeout(next, 200); });
