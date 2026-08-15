@@ -36,9 +36,11 @@ PRIMARY_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
 # 免费档单模型偶发排队/卡死（如 gemma-4-31b 高峰期长时间无响应），
 # 故按优先级尝试多个 :free 模型，任一可用即采用，显著提升每日生成成功率。
 MODELS = [PRIMARY_MODEL,
-          "google/gemma-4-26b-a4b-it:free",
-          "nvidia/nemotron-3-nano-30b-a3b:free",
-          "openai/gpt-oss-20b:free"]
+          "meta-llama/llama-3.1-8b-instruct:free",
+          "google/gemma-2-9b-it:free",
+          "qwen/qwen2.5-7b-instruct:free",
+          "mistralai/mistral-7b-instruct-v0.3:free",
+          "openchat/openchat-7b:free"]
 _BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 ENDPOINT = _BASE + "/chat/completions"
 API_KEY = os.environ.get("LLM_API_KEY", "")
