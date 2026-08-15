@@ -20,6 +20,26 @@
     gift:     '#ec4899'   // 粉（礼品）
   };
 
+  // 汇总板块：15 个行业的图标元数据（静态 UI，内容来自 data/hub/<日期>.json）
+  var HUBMETA = {
+    wine:   { char: '酒', color: '#8b1e2d', name: '酒' },
+    tea:    { char: '茶', color: '#4f7a3a', name: '茶' },
+    cig:    { char: '烟', color: '#6b7280', name: '香烟' },
+    fish:   { char: '钓', color: '#2a6f97', name: '钓鱼' },
+    bike:   { char: '机', color: '#b45309', name: '机车' },
+    bill:   { char: '台', color: '#1f7a4d', name: '台球' },
+    food:   { char: '食', color: '#d97706', name: '美食' },
+    travel: { char: '旅', color: '#0e7490', name: '旅行' },
+    cook:   { char: '烹', color: '#c2410c', name: '烹饪' },
+    game:   { char: '游', color: '#6d28d9', name: '游戏' },
+    music:  { char: '音', color: '#be185d', name: '音乐' },
+    movie:  { char: '影', color: '#7c2d12', name: '电影' },
+    fashion:{ char: '尚', color: '#db2777', name: '时尚' },
+    wear:   { char: '穿', color: '#0891b2', name: '穿搭' },
+    stock:  { char: '股', color: '#15803d', name: '股票' }
+  };
+  var HUB_ORDER = ['wine','tea','cig','fish','bike','bill','food','travel','cook','game','music','movie','fashion','wear','stock'];
+
   var cfg = null;
   var catMap = {};
   var currentCat = null;
@@ -120,6 +140,16 @@
       '<div class="station-hint">器物图库 →</div>';
     ic.addEventListener('click', openImages);
     grid.appendChild(ic);
+
+    // 追加「汇总」板块（手机桌面图标布局，每日各行业资讯）
+    var hc = document.createElement('div');
+    hc.className = 'station-card hub-tile';
+    hc.innerHTML =
+      '<div class="station-photo-wrap hub-tile-wrap">' + hubGlyphSVG() + '</div>' +
+      '<div class="station-label">汇总</div>' +
+      '<div class="station-hint">每日各行业资讯 →</div>';
+    hc.addEventListener('click', openHub);
+    grid.appendChild(hc);
   }
 
   // ---------- 品类页：内容卡片 ----------
@@ -245,6 +275,45 @@
   }
   function closeImages() {
     var b = $('#imgBoard');
+    b.classList.remove('open');
+    b.setAttribute('aria-hidden', 'true');
+  }
+
+  // ---------- 汇总板块（手机桌面图标布局，每日各行业真实资讯）----------
+  function hubGlyphSVG() {
+    return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#9aa3b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="9" y="9" width="13" height="13" rx="3"/><rect x="26" y="9" width="13" height="13" rx="3"/>' +
+      '<rect x="9" y="26" width="13" height="13" rx="3"/><rect x="26" y="26" width="13" height="13" rx="3"/></svg>';
+  }
+  function openHub() {
+    var b = $('#hubBoard');
+    $('#hubTitle').textContent = '汇总';
+    b.classList.add('open');
+    b.setAttribute('aria-hidden', 'false');
+    b.scrollTop = 0;
+    var grid = $('#hubGrid');
+    grid.innerHTML = '<div class="hub-loading">加载中…</div>';
+    fetchJSON(DATA + 'hub/' + todayStr() + '.json').then(function (data) {
+      if (!data || !Array.isArray(data.items) || !data.items.length) {
+        grid.innerHTML = '<div class="hub-loading">今日汇总生成中…（每日 09:30 由 AI 抓取真实资讯刷新）</div>';
+        return;
+      }
+      grid.innerHTML = '';
+      data.items.forEach(function (it) {
+        var m = HUBMETA[it.id] || { char: (it.label || '?').charAt(0), color: '#64748b', name: it.label || it.id };
+        var tile = document.createElement('div');
+        tile.className = 'hub-icon';
+        tile.innerHTML = '<div class="hub-icon-tile" style="background:' + m.color + '">' + esc(m.char) + '</div>' +
+          '<div class="hub-icon-label">' + esc(m.name) + '</div>';
+        tile.addEventListener('click', function () {
+          openDetail(m.name + ' · 今日热点', it.news || '暂无内容');
+        });
+        grid.appendChild(tile);
+      });
+    });
+  }
+  function closeHub() {
+    var b = $('#hubBoard');
     b.classList.remove('open');
     b.setAttribute('aria-hidden', 'true');
   }
@@ -431,6 +500,7 @@
       $('#dateClose').addEventListener('click', hideDateSheet);
 
       $('#imgBack').addEventListener('click', closeImages);
+      $('#hubBack').addEventListener('click', closeHub);
       $('#imgUpload').addEventListener('click', function () { toast('在聊天框发图给我，我帮你存进共享图库'); });
     })
     .catch(function (e) {
