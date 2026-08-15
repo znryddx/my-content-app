@@ -345,12 +345,62 @@
       img.src = url;
     });
   }
+  // 前端压缩为 blob（最长边 1600 / JPEG 0.82），供 POST 到 Worker
+  function resizeImageFile(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, maxDim / Math.max(w, h));
+        var cw = Math.round(w * scale), ch = Math.round(h * scale);
+        var cvs = document.createElement('canvas');
+        cvs.width = cw; cvs.height = ch;
+        cvs.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        cvs.toBlob(function (blob) { if (blob) resolve(blob); else reject(new Error('编码失败')); }, 'image/jpeg', quality);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('图片读取失败')); };
+      img.src = url;
+    });
+  }
   function uploadFiles(files) {
+    var ep = (cfg && cfg.upload_endpoint) || '';
     var arr = Array.prototype.slice.call(files || []);
     if (!arr.length) return;
-    var idx = 0;
+    if (ep) {
+      uploadToWorker(ep, arr, 0);
+    } else {
+      saveLocal(arr, 0);
+    }
+  }
+  // 后端已部署：直接 POST 到 Worker，写进仓库（我和画廊都可见）
+  function uploadToWorker(ep, arr, idx) {
+    toast('上传中 1/' + arr.length);
+    (function next() {
+      if (idx >= arr.length) { toast('已上传 ✓'); loadGallery(); return; }
+      var f = arr[idx]; idx++;
+      toast('上传中 ' + idx + '/' + arr.length);
+      resizeImageFile(f, 1600, 0.82).then(function (blob) {
+        var fd = new FormData();
+        var jpg = (f.name || 'image').replace(/\.[^.]+$/, '') + '.jpg';
+        fd.append('file', blob, jpg);
+        return fetch(ep, { method: 'POST', body: fd });
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.error) throw new Error(j.error);
+        setTimeout(next, 200);
+      }).catch(function (e) {
+        toast('上传失败：' + e.message + '（已转本机保存）');
+        fileToDataUrl(f, 1600, 0.82).then(function (du) {
+          return idbPut({ id: 'l_' + Date.now() + '_' + idx, name: f.name || ('图片' + idx), url: du, ts: Date.now(), local: true });
+        }).then(function () { setTimeout(next, 200); }).catch(function () { setTimeout(next, 200); });
+      });
+    })();
+  }
+  // 后端未部署：存浏览器本机 IndexedDB（仅自己可见）
+  function saveLocal(arr, idx) {
     toast('保存中 1/' + arr.length);
-    function next() {
+    (function next() {
       if (idx >= arr.length) { toast('已存到本机 ✓'); loadGallery(); return; }
       var f = arr[idx]; idx++;
       toast('保存中 ' + idx + '/' + arr.length);
@@ -360,8 +410,7 @@
         toast('保存失败：' + e.message);
         setTimeout(next, 120);
       });
-    }
-    next();
+    })();
   }
 
   // ---------- 启动 ----------
