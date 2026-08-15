@@ -1,4 +1,4 @@
-import os, sys, json, base64, urllib.request, urllib.error, urllib.parse
+import os, sys, json, base64, urllib.request, urllib.error, urllib.parse, uuid
 
 CF_TOKEN = os.environ.get('CF_API_TOKEN')
 CF_ACCOUNT = os.environ.get('CF_ACCOUNT_ID')
@@ -9,7 +9,7 @@ REPO = 'znryddx/my-content-app'
 
 def cf_req(method, path, data=None, headers=None):
     url = 'https://api.cloudflare.com/client/v4/accounts/%s/workers/scripts/%s%s' % (CF_ACCOUNT, SCRIPT, path)
-    h = {'Authorization': 'Bearer ' + CF_TOKEN, 'Content-Type': 'application/javascript'}
+    h = {'Authorization': 'Bearer ' + CF_TOKEN}
     if headers: h.update(headers)
     req = urllib.request.Request(url, data=data, method=method, headers=h)
     try:
@@ -37,25 +37,41 @@ def push_file(local_rel):
         content = base64.b64encode(f.read()).decode()
     info = gh_req('GET', local_rel)
     sha = info[1]['sha'] if info[0] == 200 and info[1] and 'sha' in info[1] else None
-    payload = {'message': 'feat: 部署 Cloudflare Worker 上传后端', 'content': content}
+    payload = {'message': 'feat: 部署 Cloudflare Worker 上传后端（secret 经 metadata 绑定）', 'content': content}
     if sha:
         payload['sha'] = sha
     st, _ = gh_req('PUT', local_rel, payload)
     print('PUSHED', local_rel, st)
 
-# 1) 部署 Worker 脚本
+# 1) 同一次 multipart 上传：脚本 + GH_TOKEN 密钥绑定（令牌只经 metadata 发给 Cloudflare，不进仓库/前端）
 with open(os.path.join(ROOT, 'worker.js'), 'rb') as f:
     code = f.read()
-st, body = cf_req('PUT', '', code)
-print('DEPLOY', st, body[:160])
+metadata = {
+    "body_part": "worker.js",
+    "bindings": [{"type": "secret_text", "name": "GH_TOKEN", "text": GH_TOKEN}]
+}
+boundary = '----wb' + uuid.uuid4().hex
+parts = []
+parts.append(('--' + boundary).encode())
+parts.append(b'Content-Disposition: form-data; name="metadata"')
+parts.append(b'Content-Type: application/json')
+parts.append(b'')
+parts.append(json.dumps(metadata).encode())
+parts.append(('--' + boundary).encode())
+parts.append(b'Content-Disposition: form-data; name="worker.js"; filename="worker.js"')
+parts.append(b'Content-Type: application/javascript')
+parts.append(b'')
+parts.append(code)
+parts.append(('--' + boundary + '--').encode())
+parts.append(b'')
+body = b'\r\n'.join(parts)
+headers = {'Content-Type': 'multipart/form-data; boundary=' + boundary}
+st, resp = cf_req('PUT', '', body, headers)
+print('DEPLOY', st, resp[:200])
 if st >= 300:
-    sys.exit('Worker 部署失败：' + body[:300])
+    sys.exit('Worker 部署失败：' + resp[:300])
 
-# 2) 写入 GH_TOKEN 服务端密钥（绝不进前端）
-st2, body2 = cf_req('PUT', '/secrets/GH_TOKEN', json.dumps({'text': GH_TOKEN}).encode(), {'Content-Type': 'application/json'})
-print('SECRET', st2, body2[:160])
-
-# 3) 获取 workers.dev 子域，拼出上传 URL
+# 2) 获取 workers.dev 子域，拼出上传 URL
 try:
     sd = urllib.request.urlopen(urllib.request.Request(
         'https://api.cloudflare.com/client/v4/accounts/%s/workers/subdomain' % CF_ACCOUNT,
@@ -67,19 +83,17 @@ except Exception as e:
 worker_url = ('https://%s.%s.workers.dev/upload' % (SCRIPT, sub)) if sub else None
 print('WORKER_URL', worker_url)
 
-# 4) 回填 config.upload_endpoint
+# 3) 回填 config.upload_endpoint 并推送前端 + 配套文件
 if worker_url:
     cfgp = os.path.join(ROOT, 'config.json')
     cfg = json.load(open(cfgp, encoding='utf-8'))
     cfg['upload_endpoint'] = worker_url
     json.dump(cfg, open(cfgp, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
-    # 推送 config.json（含 endpoint）到 GitHub
     push_file('config.json')
-    # 推送前端双模式 + Worker 配套文件
     push_file('app.js')
     push_file('worker.js')
     push_file('wrangler.toml')
     push_file('deploy_worker.py')
     print('DONE -> upload_endpoint =', worker_url)
 else:
-    print('DONE_BUT_NO_URL: 部署成功但未拿到 worker URL，请手动在 Cloudflare 控制台确认子域后回填 config.upload_endpoint')
+    print('DONE_BUT_NO_URL: 部署成功但未拿到 worker URL，请在 Cloudflare 控制台确认子域后手动回填 config.upload_endpoint')
