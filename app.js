@@ -117,7 +117,7 @@
     ic.innerHTML =
       '<div class="station-photo-wrap img-tile-wrap">' + cameraSVG() + '</div>' +
       '<div class="station-label">图片</div>' +
-      '<div class="station-hint">上传器物图 →</div>';
+      '<div class="station-hint">器物图库 →</div>';
     ic.addEventListener('click', openImages);
     grid.appendChild(ic);
   }
@@ -227,7 +227,7 @@
     s.setAttribute('aria-hidden', 'true');
   }
 
-  // ---------- 图片板块（画廊 + 上传）----------
+  // ---------- 图片板块（共享图库，由 AI 推送进仓库）----------
   function cameraSVG() {
     return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#9aa3b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
       '<rect x="7" y="14" width="34" height="26" rx="4"/>' +
@@ -248,41 +248,30 @@
     b.classList.remove('open');
     b.setAttribute('aria-hidden', 'true');
   }
+  // 图库数据来自仓库 manifest.json（AI 推送的图片都在这里，全端共享可见）
   function loadGallery() {
-    var remote = fetch('./assets/uploads/manifest.json', { cache: 'no-store' })
+    fetch('./assets/uploads/manifest.json', { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : []; })
-      .catch(function () { return []; });
-    var local = idbAll().catch(function () { return []; });
-    Promise.all([remote, local]).then(function (pairs) {
-      var rem = pairs[0] || [], loc = pairs[1] || [];
-      var map = {};
-      rem.forEach(function (it) { map[it.name] = it; });
-      loc.forEach(function (it) { map[it.name] = it; }); // 本地优先覆盖同名
-      var list = Object.keys(map).map(function (k) { return map[k]; });
-      list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
-      renderGallery(list);
-    });
+      .catch(function () { return []; })
+      .then(function (list) {
+        list = Array.isArray(list) ? list : [];
+        list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+        renderGallery(list);
+      });
   }
   function renderGallery(list) {
     var grid = $('#imgGrid');
     if (!list || !list.length) {
-      grid.innerHTML = '<div class="img-empty">还没有图片<br><span>点右上角「＋ 上传」把器物图存到这里（仅本机可看）。想让我（AI）也看到并推进各板块内容，直接在这个聊天框发图给我即可。</span></div>';
+      grid.innerHTML = '<div class="img-empty">图库还是空的<br><span>想加图？直接在聊天框发图给我，我帮你存进这个共享图库，刷新后这里就会出现。本机浏览器无法直连 GitHub，自助上传走不通——经我最稳。</span></div>';
       return;
     }
     grid.innerHTML = '';
     list.forEach(function (it) {
       var cell = document.createElement('div');
       cell.className = 'img-cell';
-      var del = it.local ? '<button class="img-del" title="删除">×</button>' : '';
-      cell.innerHTML = '<img class="img-thumb" src="' + esc(it.url) + '" alt="' + esc(it.name) + '" loading="lazy">' + del +
-        '<div class="img-name">' + esc(it.name) + (it.local ? ' · 本机' : '') + '</div>';
+      cell.innerHTML = '<img class="img-thumb" src="' + esc(it.url) + '" alt="' + esc(it.name) + '" loading="lazy">' +
+        '<div class="img-name">' + esc(it.name) + '</div>';
       cell.addEventListener('click', function () { window.open(it.url, '_blank'); });
-      if (it.local) {
-        cell.querySelector('.img-del').addEventListener('click', function (ev) {
-          ev.stopPropagation();
-          idbDel(it.id).then(function () { loadGallery(); toast('已删除'); });
-        });
-      }
       grid.appendChild(cell);
     });
   }
@@ -442,8 +431,7 @@
       $('#dateClose').addEventListener('click', hideDateSheet);
 
       $('#imgBack').addEventListener('click', closeImages);
-      $('#imgUpload').addEventListener('click', function () { $('#imgFile').click(); });
-      $('#imgFile').addEventListener('change', function (e) { uploadFiles(e.target.files); e.target.value = ''; });
+      $('#imgUpload').addEventListener('click', function () { toast('在聊天框发图给我，我帮你存进共享图库'); });
     })
     .catch(function (e) {
       $('#scene').innerHTML = '<div class="station-grid"><div class="station-card"><div class="station-label">配置加载失败：' + esc(e.message) + '</div></div></div>';
