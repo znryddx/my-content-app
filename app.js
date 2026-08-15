@@ -46,6 +46,7 @@
   var catMap = {};
   var currentCat = null;
   var currentDate = null;
+  var currentHubDate = null;
   var currentDetail = { title: '', body: '' };
 
   // ---------- 工具 ----------
@@ -295,9 +296,19 @@
     b.scrollTop = 0;
     var grid = $('#hubGrid');
     grid.innerHTML = '<div class="hub-loading">加载中…</div>';
-    fetchJSON(DATA + 'hub/' + todayStr() + '.json').then(function (data) {
+    fetchJSON(DATA + 'hub/dates.json').then(function (dates) {
+      var date = (dates && dates.length) ? dates[dates.length - 1] : todayStr();
+      loadHub(date);
+    });
+  }
+  function loadHub(date) {
+    currentHubDate = date;
+    $('#hubDate').textContent = dateLabel(date).slice(0, 10) + ' ▾';
+    var grid = $('#hubGrid');
+    grid.innerHTML = '<div class="hub-loading">加载中…</div>';
+    fetchJSON(DATA + 'hub/' + date + '.json').then(function (data) {
       if (!data || !Array.isArray(data.items) || !data.items.length) {
-        grid.innerHTML = '<div class="hub-loading">今日汇总生成中…（每日 09:30 由 AI 抓取真实资讯刷新）</div>';
+        grid.innerHTML = '<div class="hub-loading">该日汇总生成中…（每日 09:30 由 AI 抓取真实资讯刷新）</div>';
         return;
       }
       grid.innerHTML = '';
@@ -318,6 +329,30 @@
     var b = $('#hubBoard');
     b.classList.remove('open');
     b.setAttribute('aria-hidden', 'true');
+  }
+  // 汇总日期选择：复用全局 #dateSheet / #dateList 弹层
+  function openHubDatePicker() {
+    fetchJSON(DATA + 'hub/dates.json').then(function (dates) {
+      var list = $('#dateList');
+      if (!dates || !dates.length) {
+        list.innerHTML = '<div class="date-chip">暂无历史，部署后每日自动生成</div>';
+      } else {
+        list.innerHTML = '';
+        dates.forEach(function (dt) {
+          var c = document.createElement('div');
+          c.className = 'date-chip' + (dt === currentHubDate ? ' active' : '');
+          c.textContent = dateLabel(dt) + (dt === todayStr() ? '（今天）' : '');
+          c.addEventListener('click', function () {
+            hideDateSheet();
+            loadHub(dt);
+          });
+          list.appendChild(c);
+        });
+      }
+      var s = $('#dateSheet');
+      s.classList.add('show');
+      s.setAttribute('aria-hidden', 'false');
+    });
   }
   // 图库数据来自仓库 manifest.json（AI 推送的图片都在这里，全端共享可见）
   function loadGallery() {
@@ -503,6 +538,7 @@
 
       $('#imgBack').addEventListener('click', closeImages);
       $('#hubBack').addEventListener('click', closeHub);
+      $('#hubDate').addEventListener('click', openHubDatePicker);
       $('#imgUpload').addEventListener('click', function () { toast('在聊天框发图给我，我帮你存进共享图库'); });
     })
     .catch(function (e) {
