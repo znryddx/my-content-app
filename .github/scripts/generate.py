@@ -122,7 +122,7 @@ def call_model(user):
     ]
     last = None
     for model in MODELS:
-        for attempt in range(2):  # 每个模型最多 2 次
+        for attempt in range(3):  # 每个模型最多 3 次
             payload = json.dumps({
                 "model": model,
                 "messages": messages,
