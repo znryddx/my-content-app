@@ -163,7 +163,7 @@
     {
       "id": "topic",
       "title": "主推选题",
-      "prompt": "给「{theme}」今天值得主推的 3 个内容选题，每个含切入角度与预期目标人群。"
+      "prompt": "给「{theme}」今天值得主推的 3 个内容选题，每个含切入角度与预期人群。"
     },
     {
       "id": "strategy",
@@ -177,6 +177,5 @@
       "treadmill",
       "toilet_zone"
     ]
-  },
-  "upload_endpoint": "https://marvis-upload.jiangxinyawu.workers.dev/upload"
+  }
 }
