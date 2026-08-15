@@ -249,28 +249,85 @@
     b.setAttribute('aria-hidden', 'true');
   }
   function loadGallery() {
-    fetch('./assets/uploads/manifest.json', { cache: 'no-store' })
+    var remote = fetch('./assets/uploads/manifest.json', { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : []; })
-      .then(renderGallery)
-      .catch(function () { renderGallery([]); });
+      .catch(function () { return []; });
+    var local = idbAll().catch(function () { return []; });
+    Promise.all([remote, local]).then(function (pairs) {
+      var rem = pairs[0] || [], loc = pairs[1] || [];
+      var map = {};
+      rem.forEach(function (it) { map[it.name] = it; });
+      loc.forEach(function (it) { map[it.name] = it; }); // 本地优先覆盖同名
+      var list = Object.keys(map).map(function (k) { return map[k]; });
+      list.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+      renderGallery(list);
+    });
   }
   function renderGallery(list) {
     var grid = $('#imgGrid');
     if (!list || !list.length) {
-      grid.innerHTML = '<div class="img-empty">还没有图片<br><span>点右上角「＋ 上传」把你的器物图传上来，方便后续各板块内容推进</span></div>';
+      grid.innerHTML = '<div class="img-empty">还没有图片<br><span>点右上角「＋ 上传」把器物图存到这里（仅本机可看）。想让我（AI）也看到并推进各板块内容，直接在这个聊天框发图给我即可。</span></div>';
       return;
     }
     grid.innerHTML = '';
     list.forEach(function (it) {
       var cell = document.createElement('div');
       cell.className = 'img-cell';
-      cell.innerHTML = '<img class="img-thumb" src="' + esc(it.url) + '" alt="' + esc(it.name) + '" loading="lazy">' +
-        '<div class="img-name">' + esc(it.name) + '</div>';
+      var del = it.local ? '<button class="img-del" title="删除">×</button>' : '';
+      cell.innerHTML = '<img class="img-thumb" src="' + esc(it.url) + '" alt="' + esc(it.name) + '" loading="lazy">' + del +
+        '<div class="img-name">' + esc(it.name) + (it.local ? ' · 本机' : '') + '</div>';
       cell.addEventListener('click', function () { window.open(it.url, '_blank'); });
+      if (it.local) {
+        cell.querySelector('.img-del').addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          idbDel(it.id).then(function () { loadGallery(); toast('已删除'); });
+        });
+      }
       grid.appendChild(cell);
     });
   }
-  function resizeImageFile(file, maxDim, quality) {
+  // ---------- IndexedDB 本地存储（无需后端）----------
+  var IDB_NAME = 'marvis_uploads', IDB_STORE = 'imgs';
+  function idbOpen() {
+    return new Promise(function (res, rej) {
+      var req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore(IDB_STORE, { keyPath: 'id' }); };
+      req.onsuccess = function () { res(req.result); };
+      req.onerror = function () { rej(req.error); };
+    });
+  }
+  function idbAll() {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction(IDB_STORE, 'readonly');
+        var rq = tx.objectStore(IDB_STORE).getAll();
+        rq.onsuccess = function () { res(rq.result || []); };
+        rq.onerror = function () { rej(rq.error); };
+      });
+    });
+  }
+  function idbPut(rec) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).put(rec);
+        tx.oncomplete = function () { res(); };
+        tx.onerror = function () { rej(tx.error); };
+      });
+    });
+  }
+  function idbDel(id) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (res, rej) {
+        var tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).delete(id);
+        tx.oncomplete = function () { res(); };
+        tx.onerror = function () { rej(tx.error); };
+      });
+    });
+  }
+  // 前端压缩为 dataURL（最长边 1600 / JPEG 0.82），直接存 IndexedDB，刷新后仍在
+  function fileToDataUrl(file, maxDim, quality) {
     return new Promise(function (resolve, reject) {
       var img = new Image();
       var url = URL.createObjectURL(file);
@@ -282,34 +339,26 @@
         cvs.width = cw; cvs.height = ch;
         cvs.getContext('2d').drawImage(img, 0, 0, cw, ch);
         URL.revokeObjectURL(url);
-        cvs.toBlob(function (blob) { if (blob) resolve(blob); else reject(new Error('编码失败')); }, 'image/jpeg', quality);
+        resolve(cvs.toDataURL('image/jpeg', quality));
       };
       img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('图片读取失败')); };
       img.src = url;
     });
   }
   function uploadFiles(files) {
-    var ep = (cfg && cfg.upload_endpoint) || '';
-    if (!ep) { toast('上传服务部署中，请稍候'); return; }
     var arr = Array.prototype.slice.call(files || []);
     if (!arr.length) return;
     var idx = 0;
-    toast('上传中 1/' + arr.length);
+    toast('保存中 1/' + arr.length);
     function next() {
-      if (idx >= arr.length) { toast('上传完成 ✓'); loadGallery(); return; }
+      if (idx >= arr.length) { toast('已存到本机 ✓'); loadGallery(); return; }
       var f = arr[idx]; idx++;
-      toast('上传中 ' + idx + '/' + arr.length);
-      resizeImageFile(f, 1600, 0.82).then(function (blob) {
-        var fd = new FormData();
-        var jpg = (f.name || 'image').replace(/\.[^.]+$/, '') + '.jpg';
-        fd.append('file', blob, jpg);
-        return fetch(ep, { method: 'POST', body: fd });
-      }).then(function (r) { return r.json(); }).then(function (j) {
-        if (j && j.error) throw new Error(j.error);
-        setTimeout(next, 250);
-      }).catch(function (e) {
-        toast('上传失败：' + e.message);
-        setTimeout(next, 250);
+      toast('保存中 ' + idx + '/' + arr.length);
+      fileToDataUrl(f, 1600, 0.82).then(function (dataUrl) {
+        return idbPut({ id: 'l_' + Date.now() + '_' + idx, name: f.name || ('图片' + idx), url: dataUrl, ts: Date.now(), local: true });
+      }).then(function () { setTimeout(next, 120); }).catch(function (e) {
+        toast('保存失败：' + e.message);
+        setTimeout(next, 120);
       });
     }
     next();
