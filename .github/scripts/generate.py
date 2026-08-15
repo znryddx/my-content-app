@@ -12,8 +12,8 @@ GitHub Models 已于 2026-07-30 退役。默认改用 OpenRouter（openrouter.ai
                 注意：OpenRouter 上 google/gemini-2.5-flash 无 :free 档（按量计费），勿填带 :free 的 gemini-2.5-flash，会 404。
 如需改用国内免代理平台（如硅基流动 SiliconFlow），覆盖 LLM_BASE_URL 与 LLM_MODEL 即可。
 
-为规避免费档 RPM 限流，本脚本将分类「分批」调用：每批 3 个分类合并成 1 次 API 请求
-（一次返回整批 JSON），全天仅 ~3 次调用，远低于限流阈值。
+为规避免费档 RPM 限流，本脚本将分类「分批」调用：每批 1 个分类单独生成，
+靠分类间间隔 + 模型池轮换 + 退避重试避开限流，最大化每日生成成功率（让 B 链路尽量不触发）。
 - 结果写入 data/<catId>/<date>.json，并维护 data/<catId>/dates.json（供 App 回看历史）。
 """
 import os
@@ -22,6 +22,7 @@ import datetime
 import urllib.request
 import urllib.error
 import time
+import random
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -35,12 +36,17 @@ DATE = datetime.date.today().isoformat()
 PRIMARY_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
 # 免费档单模型偶发排队/卡死（如 gemma-4-31b 高峰期长时间无响应），
 # 故按优先级尝试多个 :free 模型，任一可用即采用，显著提升每日生成成功率。
+# 模型池越大，A 链路命中可用模型的概率越高，B 兜底越不需要启动。
 MODELS = [PRIMARY_MODEL,
-          "meta-llama/llama-3.1-8b-instruct:free",
-          "google/gemma-2-9b-it:free",
-          "qwen/qwen2.5-7b-instruct:free",
-          "mistralai/mistral-7b-instruct-v0.3:free",
-          "openchat/openchat-7b:free"]
+          "google/gemma-4-26b-a4b-it:free",
+          "nvidia/nemotron-3-nano-30b-a3b:free",
+          "openai/gpt-oss-20b:free",
+          "qwen/qwen3-32b:free",
+          "meta/llama-3.1-8b-instruct:free",
+          "deepseek/deepseek-r1-distill-llama-70b:free",
+          "thudm/glm-4-9b:free"]
+# 逐次退避基数（秒），叠加随机抖动避免多模型同时重试被集体限流
+BACKOFF = [15, 30, 60]
 _BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 ENDPOINT = _BASE + "/chat/completions"
 API_KEY = os.environ.get("LLM_API_KEY", "")
@@ -156,21 +162,22 @@ def call_model(user):
                 if e.code == 404:
                     print("[warn] 模型 %s 不存在，换下一个" % model, flush=True)
                     break  # 跳到下一个模型
-                wait = [10, 20, 40][min(attempt, 2)]
+                wait = BACKOFF[min(attempt, len(BACKOFF) - 1)]
+                wait = int(wait + random.uniform(0, wait * 0.4))
                 ra = e.headers.get("Retry-After") if hasattr(e, "headers") else None
                 if ra and str(ra).isdigit():
-                    wait = int(ra) + 3
+                    wait = max(wait, int(ra) + 3)
                 print("[warn] 模型 %s 第%d次失败(HTTP %d)：%ds后重试 %s"
                       % (model, attempt + 1, e.code, wait, detail), flush=True)
                 last = e
-                if attempt < 1:
+                if attempt < 2:
                     time.sleep(wait)
             except Exception as e:
                 print("[warn] 模型 %s 第%d次失败：%s" % (model, attempt + 1, e), flush=True)
                 last = e
-                if attempt < 1:
-                    time.sleep(10)
-        # 无论 404 跳出还是两次用尽，都尝试下一个模型
+                if attempt < 2:
+                    time.sleep(BACKOFF[0] + int(random.uniform(0, 6)))
+        # 无论 404 跳出还是三次用尽，都尝试下一个模型
         continue
     raise RuntimeError("所有免费模型均失败（多因排队/限流），请稍后重试或换密钥: %s" % last)
 
@@ -237,7 +244,7 @@ def call_batch(batch):
     cells_meta = cat.get("cells") or CELLS
     n = len(cells_meta)
     result = None
-    for attempt in range(3):
+    for attempt in range(4):  # 单分类整体最多 4 轮（每轮内部已轮换 8 个模型 × 3 次）
         try:
             res = call_model(build_batch([cat]))
         except Exception as e:
@@ -250,8 +257,8 @@ def call_batch(batch):
             result = res
             break
         print("[warn] 第 %d 次：分类 %s 存在空 body 或结构不全，重试" % (attempt + 1, cat["id"]), flush=True)
-        if attempt < 2:
-            time.sleep(10)
+        if attempt < 3:
+            time.sleep(12)
     if result is None:
         # 非破坏性：若当日该分类已有真实内容（如人工补种），不覆盖为占位
         existing = os.path.join(ROOT, "data", cat["id"], DATE + ".json")
@@ -283,12 +290,13 @@ def main():
         print("[fatal] 未设置 LLM_API_KEY，无法生成。请在仓库 Settings → Secrets → Actions 添加 LLM_API_KEY。")
         return
     batches = list(chunked(CATEGORIES, BATCH_SIZE))
-    print("共 %d 个分类，分 %d 批调用（每批 %d 个）" % (len(CATEGORIES), len(batches), BATCH_SIZE))
+    print("共 %d 个分类，分 %d 批调用（每批 %d 个），模型池 %d 个"
+          % (len(CATEGORIES), len(batches), BATCH_SIZE, len(MODELS)))
     for i, batch in enumerate(batches):
         print("--- 第 %d/%d 批：%s ---" % (i + 1, len(batches), ",".join(c["id"] for c in batch)), flush=True)
         call_batch(batch)
         if i < len(batches) - 1:
-            time.sleep(20)  # 分类间间隔，进一步避开免费档 RPM
+            time.sleep(25)  # 分类间间隔，进一步避开免费档 RPM
     print("All done.")
 
 
