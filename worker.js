@@ -2,17 +2,22 @@
 // 经典 Service Worker 格式（无 ESM export）；GH_TOKEN 为绑定的服务端密钥（全局变量，不进前端）
 const REPO = 'znryddx/my-content-app';
 const GH_API = 'https://api.github.com/repos/' + REPO + '/contents/';
-const ORIGIN = 'https://znryddx.github.io';
-const CORS = {
-  'Access-Control-Allow-Origin': ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
+const PAGES_BASE = 'https://znryddx.github.io/my-content-app'; // 图片对外访问基址（含项目路径）
 
-function json(data, status) {
+// CORS：反射请求来源，任何打开方式都能过预检
+function cors(request) {
+  var o = request.headers.get('Origin');
+  return {
+    'Access-Control-Allow-Origin': o || '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin'
+  };
+}
+function json(data, status, request) {
   return new Response(JSON.stringify(data), {
     status: status || 200,
-    headers: Object.assign({ 'Content-Type': 'application/json' }, CORS)
+    headers: Object.assign({ 'Content-Type': 'application/json' }, cors(request))
   });
 }
 function ghHeaders(extra) {
@@ -34,21 +39,34 @@ async function updateManifest(name, url_) {
   if (!list.some(function (x) { return x.name === name; })) {
     list.unshift({ name: name, url: url_, ts: Date.now() });
   }
-  await fetch(GH_API + encodeURIComponent(mp), {
+  const put = await fetch(GH_API + encodeURIComponent(mp), {
     method: 'PUT',
     headers: ghHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ message: 'update manifest ' + name, content: b64(JSON.stringify(list, null, 2)), sha: sha })
   });
+  if (!put.ok) {
+    const txt = await put.text();
+    throw new Error('manifest put failed ' + put.status + ' ' + txt.slice(0, 200));
+  }
 }
 
 async function handleRequest(request) {
   const url = new URL(request.url);
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  // 预检
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(request) });
+  // 自检接口（无需文件，便于排查令牌是否生效）
+  if (request.method === 'GET' && url.pathname === '/health') {
+    const tokenOk = (typeof GH_TOKEN !== 'undefined') && !!GH_TOKEN && GH_TOKEN.length > 10;
+    return json({ ok: true, token_present: tokenOk, repo: REPO, pages_base: PAGES_BASE }, 200, request);
+  }
   if (request.method === 'POST' && url.pathname === '/upload') {
     try {
+      if (typeof GH_TOKEN === 'undefined' || !GH_TOKEN) {
+        return json({ error: 'server missing GH_TOKEN binding' }, 500, request);
+      }
       const form = await request.formData();
       const file = form.get('file');
-      if (!file) return json({ error: 'no file' }, 400);
+      if (!file) return json({ error: 'no file' }, 400, request);
       const buf = new Uint8Array(await file.arrayBuffer());
       let bin = '';
       for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
@@ -65,15 +83,18 @@ async function handleRequest(request) {
         headers: ghHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ message: 'upload ' + safe, content: content, sha: sha })
       });
-      if (!put.ok) return json({ error: 'github put failed ' + put.status }, 500);
-      const url_ = ORIGIN + '/' + REPO + '/assets/uploads/' + encodeURIComponent(safe);
+      if (!put.ok) {
+        const txt = await put.text();
+        return json({ error: 'github put failed ' + put.status + ' ' + txt.slice(0, 220) }, 500, request);
+      }
+      const url_ = PAGES_BASE + '/assets/uploads/' + encodeURIComponent(safe);
       await updateManifest(safe, url_);
-      return json({ ok: true, url: url_ });
+      return json({ ok: true, url: url_ }, 200, request);
     } catch (e) {
-      return json({ error: String((e && e.message) || e) }, 500);
+      return json({ error: String((e && e.message) || e) }, 500, request);
     }
   }
-  return json({ error: 'method not allowed' }, 405);
+  return json({ error: 'method not allowed' }, 405, request);
 }
 
 addEventListener('fetch', function (event) {
