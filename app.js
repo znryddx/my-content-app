@@ -20,25 +20,27 @@
     gift:     '#ec4899'   // 粉（礼品）
   };
 
-  // 汇总板块：15 个行业的图标元数据（静态 UI，内容来自 data/hub/<日期>.json）
+  // 汇总板块：17 个行业的图标元数据（静态 UI，内容来自 data/hub/<日期>.json）
   var HUBMETA = {
-    wine:   { char: '酒', color: '#8b1e2d', name: '酒' },
-    tea:    { char: '茶', color: '#4f7a3a', name: '茶' },
-    cig:    { char: '烟', color: '#6b7280', name: '香烟' },
-    fish:   { char: '钓', color: '#2a6f97', name: '钓鱼' },
-    bike:   { char: '机', color: '#b45309', name: '机车' },
-    bill:   { char: '台', color: '#1f7a4d', name: '台球' },
-    food:   { char: '食', color: '#d97706', name: '美食' },
-    travel: { char: '旅', color: '#0e7490', name: '旅行' },
-    cook:   { char: '烹', color: '#c2410c', name: '烹饪' },
-    game:   { char: '游', color: '#6d28d9', name: '游戏' },
-    music:  { char: '音', color: '#be185d', name: '音乐' },
-    movie:  { char: '影', color: '#7c2d12', name: '电影' },
-    fashion:{ char: '尚', color: '#db2777', name: '时尚' },
-    wear:   { char: '穿', color: '#0891b2', name: '穿搭' },
-    stock:  { char: '股', color: '#15803d', name: '股票' }
+    wine:    { char: '酒', color: '#8b1e2d', name: '酒' },
+    tea:     { char: '茶', color: '#4f7a3a', name: '茶' },
+    travel:  { char: '旅', color: '#0e7490', name: '旅行' },
+    game:    { char: '游', color: '#6d28d9', name: '游戏' },
+    music:   { char: '音', color: '#be185d', name: '音乐' },
+    movie:   { char: '影', color: '#7c2d12', name: '电影' },
+    stock:   { char: '股', color: '#15803d', name: '股票' },
+    bike:    { char: '机', color: '#b45309', name: '机车' },
+    fashion: { char: '尚', color: '#db2777', name: '时尚穿搭' },
+    food:    { char: '食', color: '#d97706', name: '美食' },
+    tech:    { char: '科', color: '#2563eb', name: '科技' },
+    craft:   { char: '创', color: '#7c3aed', name: '文创' },
+    wellness:{ char: '养', color: '#0d9488', name: '养生' },
+    book:    { char: '书', color: '#a16207', name: '读书' },
+    home:    { char: '居', color: '#65a30d', name: '家居' },
+    auto:    { char: '车', color: '#1d4ed8', name: '汽车' },
+    biz:     { char: '财', color: '#b91c1c', name: '财经' }
   };
-  var HUB_ORDER = ['wine','tea','cig','fish','bike','bill','food','travel','cook','game','music','movie','fashion','wear','stock'];
+  var HUB_ORDER = ['wine','tea','travel','game','music','movie','stock','bike','fashion','food','tech','craft','wellness','book','home','auto','biz'];
 
   var cfg = null;
   var catMap = {};
