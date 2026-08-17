@@ -164,6 +164,16 @@
       '<div class="station-hint">每日生活灵感 →</div>';
     dc.addEventListener('click', openDaily);
     grid.appendChild(dc);
+
+    // 追加「法规」板块（每日知识：每本"书"从第一页往后翻，纯静态零成本）
+    var lc = document.createElement('div');
+    lc.className = 'station-card law-tile';
+    lc.innerHTML =
+      '<div class="station-photo-wrap hub-tile-wrap">' + lawGlyphSVG() + '</div>' +
+      '<div class="station-label">法规</div>' +
+      '<div class="station-hint">每日法规知识 →</div>';
+    lc.addEventListener('click', openLaw);
+    grid.appendChild(lc);
   }
 
   // ---------- 品类页：内容卡片 ----------
@@ -589,6 +599,124 @@
     })();
   }
 
+  // ---------- 法规板块（每日知识：每本"书"从第一页往后翻，纯静态零成本）----------
+  var LAW_PATH = './data/law/books.json';
+  var booksCache = null;
+  var currentLawDate = null;
+  function lawGlyphSVG() {
+    return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#3a6b5e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M24 8v32"/><path d="M14 14h20"/><path d="M14 14l-7 9h14z"/><path d="M34 14l-7 9h14z"/><path d="M16 40h16"/>' +
+      '<circle cx="24" cy="8" r="2.2" fill="#3a6b5e" stroke="none"/></svg>';
+  }
+  function loadBooks() {
+    if (booksCache) return Promise.resolve(booksCache);
+    return fetchJSON(LAW_PATH).then(function (b) {
+      booksCache = (b && b.topics) ? b : { startDate: todayStr(), topics: [] };
+      return booksCache;
+    });
+  }
+  function daysSince(start, dateStr) {
+    var s = new Date(start + 'T00:00:00');
+    var d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(s) || isNaN(d)) return 0;
+    return Math.floor((d - s) / 86400000);
+  }
+  function lawMarkKey(topicId, date) { return 'lawmark::' + topicId + '::' + date; }
+  function openLaw() {
+    var b = $('#lawBoard');
+    $('#lawTitle').textContent = '每日法规';
+    b.classList.add('open'); b.setAttribute('aria-hidden', 'false'); b.scrollTop = 0;
+    loadLaw(todayStr());
+  }
+  function closeLaw() {
+    var b = $('#lawBoard');
+    b.classList.remove('open'); b.setAttribute('aria-hidden', 'true');
+  }
+  function loadLaw(date) {
+    currentLawDate = date;
+    $('#lawDate').textContent = dateLabel(date).slice(0, 10) + ' ▾';
+    var cont = $('#lawContent');
+    cont.innerHTML = '<div class="content-card"><div class="content-title">加载中…</div></div>';
+    loadBooks().then(function (books) {
+      var topics = books.topics || [];
+      var idx = daysSince(books.startDate || date, date);
+      cont.innerHTML = '';
+      if (!topics.length) {
+        cont.innerHTML = '<div class="content-card"><div class="content-body">知识库尚未生成，请稍后刷新</div></div>';
+        return;
+      }
+      topics.forEach(function (t) {
+        var pts = t.points || [];
+        if (!pts.length) {
+          var e = document.createElement('div'); e.className = 'content-card';
+          e.innerHTML = '<div class="content-title">' + esc(t.name || t.id) + '</div><div class="content-body">该领域内容生成中…</div>';
+          cont.appendChild(e); return;
+        }
+        var i = ((idx % pts.length) + pts.length) % pts.length;
+        var p = pts[i];
+        var key = lawMarkKey(t.id, date);
+        var mark = {};
+        try { mark = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
+        var body = p.body || p.title || '';
+        var card = document.createElement('div');
+        card.className = 'content-card law-card' + (mark.hl ? ' hl' : '');
+        card.innerHTML =
+          '<div class="content-title">' + esc(t.name || t.id) + ' <span class="law-page">第 ' + (i + 1) + ' / ' + pts.length + ' 条</span></div>' +
+          '<div class="content-body law-body">' + esc(body) + '</div>' +
+          '<div class="law-marks">' +
+            '<button class="mark-btn' + (mark.read ? ' active' : '') + '" data-k="read">✓ 已读</button>' +
+            '<button class="mark-btn' + (mark.fav ? ' active' : '') + '" data-k="fav">★ 收藏</button>' +
+            '<button class="mark-btn' + (mark.hl ? ' active' : '') + '" data-k="hl">▏ 划线</button>' +
+          '</div>';
+        card.querySelector('.law-body').addEventListener('click', function () {
+          openDetail((t.name || t.id) + ' · 第 ' + (i + 1) + ' 条', body);
+        });
+        card.querySelectorAll('.mark-btn').forEach(function (btn) {
+          btn.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            var k = btn.getAttribute('data-k');
+            mark[k] = !mark[k];
+            try { localStorage.setItem(key, JSON.stringify(mark)); } catch (e) {}
+            btn.classList.toggle('active', mark[k]);
+            if (k === 'hl') card.classList.toggle('hl', mark.hl);
+            toast(k === 'fav' ? (mark.fav ? '已收藏' : '已取消收藏') :
+                  (k === 'read' ? (mark.read ? '标记已读' : '取消已读') :
+                  (mark.hl ? '已划线' : '取消划线')));
+          });
+        });
+        cont.appendChild(card);
+      });
+    });
+  }
+  function shiftDate(dateStr, delta) {
+    var d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    var m = ('0' + (d.getMonth() + 1)).slice(-2), day = ('0' + d.getDate()).slice(-2);
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function openLawDatePicker() {
+    var input = $('#lawDateInput');
+    if (input) input.value = currentLawDate || todayStr();
+    var list = $('#lawDateList');
+    if (list) {
+      list.innerHTML = '';
+      [['今天', 0], ['昨天', -1], ['一周前', -7], ['一月前', -30]].forEach(function (p) {
+        var dt = shiftDate(currentLawDate || todayStr(), p[1]);
+        var c = document.createElement('div');
+        c.className = 'date-chip' + (dt === currentLawDate ? ' active' : '');
+        c.textContent = dateLabel(dt) + (dt === todayStr() ? '（今天）' : '');
+        c.addEventListener('click', function () { hideLawDateSheet(); loadLaw(dt); });
+        list.appendChild(c);
+      });
+    }
+    var s = $('#lawDateSheet');
+    if (s) { s.classList.add('show'); s.setAttribute('aria-hidden', 'false'); }
+  }
+  function hideLawDateSheet() {
+    var s = $('#lawDateSheet');
+    if (s) { s.classList.remove('show'); s.setAttribute('aria-hidden', 'true'); }
+  }
+
   // ---------- 启动 ----------
   fetch('./config.json', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
@@ -622,6 +750,15 @@
       $('#dailyBack').addEventListener('click', closeDaily);
       $('#dailyDate').addEventListener('click', openDailyDatePicker);
       $('#imgUpload').addEventListener('click', function () { toast('在聊天框发图给我，我帮你存进共享图库'); });
+
+      $('#lawBack').addEventListener('click', closeLaw);
+      $('#lawDate').addEventListener('click', openLawDatePicker);
+      $('#lawDateClose').addEventListener('click', hideLawDateSheet);
+      var lawInput = $('#lawDateInput');
+      if (lawInput) lawInput.addEventListener('change', function () {
+        var v = lawInput.value;
+        if (v) { hideLawDateSheet(); loadLaw(v); }
+      });
     })
     .catch(function (e) {
       $('#scene').innerHTML = '<div class="station-grid"><div class="station-card"><div class="station-label">配置加载失败：' + esc(e.message) + '</div></div></div>';
