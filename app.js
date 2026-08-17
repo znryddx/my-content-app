@@ -322,6 +322,7 @@
       loadHub(date);
     });
   }
+  function hubMarkKey(itemId, date) { return 'hubmark::' + itemId + '::' + date; }
   function loadHub(date) {
     currentHubDate = date;
     $('#hubDate').textContent = dateLabel(date).slice(0, 10) + ' ▾';
@@ -335,14 +336,37 @@
       grid.innerHTML = '';
       data.items.forEach(function (it) {
         var m = HUBMETA[it.id] || { char: (it.label || '?').charAt(0), color: '#64748b', name: it.label || it.id };
-        var tile = document.createElement('div');
-        tile.className = 'hub-icon';
-        tile.innerHTML = '<div class="hub-icon-tile" style="background:' + m.color + '">' + esc(m.char) + '</div>' +
-          '<div class="hub-icon-label">' + esc(m.name) + '</div>';
-        tile.addEventListener('click', function () {
-          openDetail(m.name + ' · 今日热点', it.news || '暂无内容');
+        var body = it.news || '暂无内容';
+        var key = hubMarkKey(it.id, date);
+        var mark = {};
+        try { mark = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
+        var card = document.createElement('div');
+        card.className = 'content-card hub-card' + (mark.hl ? ' hl' : '');
+        card.innerHTML =
+          '<div class="content-title"><span class="hub-badge" style="background:' + m.color + '">' + esc(m.char) + '</span>' + esc(m.name) + ' · 行业热点</div>' +
+          '<div class="content-body hub-body">' + esc(body) + '</div>' +
+          '<div class="law-marks">' +
+            '<button class="mark-btn' + (mark.read ? ' active' : '') + '" data-k="read">✓ 已读</button>' +
+            '<button class="mark-btn' + (mark.fav ? ' active' : '') + '" data-k="fav">★ 收藏</button>' +
+            '<button class="mark-btn' + (mark.hl ? ' active' : '') + '" data-k="hl">▏ 划线</button>' +
+          '</div>';
+        card.querySelector('.hub-body').addEventListener('click', function () {
+          openDetail(m.name + ' · 今日热点', body);
         });
-        grid.appendChild(tile);
+        card.querySelectorAll('.mark-btn').forEach(function (btn) {
+          btn.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            var k = btn.getAttribute('data-k');
+            mark[k] = !mark[k];
+            try { localStorage.setItem(key, JSON.stringify(mark)); } catch (e) {}
+            btn.classList.toggle('active', mark[k]);
+            if (k === 'hl') card.classList.toggle('hl', mark.hl);
+            toast(k === 'fav' ? (mark.fav ? '已收藏' : '已取消收藏') :
+                  (k === 'read' ? (mark.read ? '标记已读' : '取消已读') :
+                  (mark.hl ? '已划线' : '取消划线')));
+          });
+        });
+        grid.appendChild(card);
       });
     });
   }
