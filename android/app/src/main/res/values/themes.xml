@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MyContentApp" parent="Theme.Material.Light.NoActionBar">
+    <style name="Theme.MyContentApp" parent="android:Theme.Material.Light">
+        <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:statusBarColor">#0f1226</item>
         <item name="android:navigationBarColor">#0f1226</item>
