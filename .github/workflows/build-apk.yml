@@ -1,11 +1,19 @@
 name: Build APK
-on:/n  workflow_dispatch:/n  push:/n    paths:/n      - "android/**"
-jobs:/n  build:/n    runs-on: ubuntu-latest
-    steps:/n      - name: checkout
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "android/**"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
         uses: actions/checkout@v4
       - name: setup JDK 17
         uses: actions/setup-java@v4
-        with:/n          distribution: temurin
+        with:
+          distribution: temurin
           java-version: "17"
       - name: install Android SDK
         uses: android-actions/setup-android@v3
@@ -15,9 +23,11 @@ jobs:/n  build:/n    runs-on: ubuntu-latest
           yes | sdkmanager --licenses
       - name: build Debug APK
         uses: gradle/gradle-build-action@v3
-        with:/n          build-root-directory: android
+        with:
+          build-root-directory: android
           arguments: assembleDebug
       - name: upload APK
         uses: actions/upload-artifact@v4
-        with:/n          name: app-debug-apk
+        with:
+          name: app-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
