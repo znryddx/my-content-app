@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">我的每日内容</string>
+    <string name="app_name">这男人有点东西</string>
     <!-- 改成你的 GitHub Pages 地址 -->
-    <string name="site_url">https://&lt;你的用户名&gt;.github.io/&lt;仓库名&gt;/</string>
+    <string name="site_url">https://znryddx.github.io/my-content-app/</string>
 </resources>
