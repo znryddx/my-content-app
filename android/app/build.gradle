@@ -1,9 +1,9 @@
 plugins {
-    id 'com.android.application'
+    id "com.android.application"
 }
 
 android {
-    namespace 'com.example.mycontentapp'
+    namespace "com.example.mycontentapp"
     compileSdk 34
 
     defaultConfig {
