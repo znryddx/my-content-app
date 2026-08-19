@@ -1,0 +1,44 @@
+name: 平台模块每日选题生成（零成本）
+
+on:
+  schedule:
+    # UTC 01:00 = 北京时间 09:00 每日自动生成（A 主生成，位于 WorkBuddy 兜底 B 之前）
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-platform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 生成平台选题（免费模型，0 成本）
+        continue-on-error: true
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
+        run: python .github/scripts/generate_platform.py
+
+      - name: 提交并触发 Pages 部署
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/platform/
+          if git diff --cached --quiet; then
+            echo "无内容变化，跳过提交"
+          else
+            git commit -m "daily platform topics $(date +%F) [bot]"
+            git push
+          fi
