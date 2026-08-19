@@ -30,11 +30,54 @@
     <div class="cv-top">
       <button class="cv-back" id="imgBack" aria-label="返回">‹ 返回</button>
       <div class="cv-title" id="imgTitle">图片</div>
-      <button class="cv-date img-upload-btn" id="imgUpload">＋ 上传</button>
+      <button class="cv-date img-upload-btn" id="imgUpload">发图给 AI</button>
     </div>
     <div class="cv-content img-grid" id="imgGrid"></div>
     <input type="file" id="imgFile" accept="image/*" multiple hidden>
   </section>
+
+  <!-- 汇总板块：手机桌面图标布局 -->
+  <section class="cv hub-board" id="hubBoard" aria-hidden="true">
+    <div class="cv-top">
+      <button class="cv-back" id="hubBack" aria-label="返回">‹ 返回</button>
+      <div class="cv-title" id="hubTitle">汇总</div>
+      <button class="cv-date" id="hubDate">每日各行业资讯 ▾</button>
+    </div>
+    <div class="cv-content hub-grid" id="hubGrid"></div>
+  </section>
+
+  <!-- 日常板块：活人感灵感板（风趣幽默，由 AI 策展） -->
+  <section class="cv daily-board" id="dailyBoard" aria-hidden="true">
+    <div class="cv-top">
+      <button class="cv-back" id="dailyBack" aria-label="返回">‹ 返回</button>
+      <div class="cv-title" id="dailyTitle">日常</div>
+      <button class="cv-date" id="dailyDate">每日生活灵感 ▾</button>
+    </div>
+    <div class="cv-content" id="dailyContent"></div>
+  </section>
+
+  <!-- 法规板块：每日知识 -->
+  <section class="cv law-board" id="lawBoard" aria-hidden="true">
+    <div class="cv-top">
+      <button class="cv-back" id="lawBack" aria-label="返回">‹ 返回</button>
+      <div class="cv-title" id="lawTitle">每日法规</div>
+      <button class="cv-date" id="lawDate">每日法规知识 ▾</button>
+    </div>
+    <div class="cv-content" id="lawContent"></div>
+  </section>
+
+  <!-- 法规日期选择 -->
+  <div class="date-sheet" id="lawDateSheet" aria-hidden="true">
+    <div class="detail-top">
+      <button class="detail-btn" id="lawDateClose">‹ 关闭</button>
+      <div class="detail-sheet-title">选择日期</div>
+      <div></div>
+    </div>
+    <div style="max-width:600px;margin:10px auto 0;padding:0 4px;">
+      <input type="date" id="lawDateInput" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:15px;font-family:inherit;color:var(--text);background:#fff;">
+    </div>
+    <div class="date-list" id="lawDateList"></div>
+  </div>
 
   <!-- 内容详情：底部弹出 sheet -->
   <div class="detail-mask" id="detailMask"></div>
@@ -44,7 +87,7 @@
       <button class="detail-copy" id="detailCopy">复制全文</button>
     </div>
     <div class="detail-sheet-body" id="detailBody"></div>
-    <button class="detail-read" id="detailRead" style="display:none">标记已读</button>
+    <button class="detail-read" id="detailRead" style="display:none;">标记已读</button>
     <button class="detail-known" id="detailKnown">知道了</button>
   </div>
 
