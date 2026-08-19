@@ -369,6 +369,10 @@ body {
 .date-chip .dc-prog { float: right; font-size: 12px; color: #8a93a3; font-weight: 600; }
 
 /* 平台选题：4 段结构 */
+.plat-filter { font-size: 13px; color: var(--accent); background: #eef4f1; border: 1px solid #d6e6df; border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; cursor: pointer; text-align: center; user-select: none; }
+.plat-filter.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.plat-cat-stat { font-size: 13px; color: #5b6472; background: #f4f6f8; border-radius: 12px; padding: 10px 13px; margin-bottom: 12px; line-height: 1.6; }
+.plat-cat-stat b { color: #1f2733; }
 .pt-seg { margin-bottom: 15px; }
 .pt-seg:last-child { margin-bottom: 0; }
 .pt-seg-h { font-size: 12px; font-weight: 700; color: #3a6b5e; letter-spacing: .5px; margin-bottom: 5px; }
