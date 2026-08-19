@@ -32,6 +32,7 @@
   var platLevel = 1;         // 1=平台选择器 2=品类列表
   var platPlatform = null;    // 当前平台 id
   var currentPlatDate = null; // 当前平台选题日期
+  var platUnreadOnly = false; // 平台选择器：只看未读筛选
 
   // ---------- 工具 ----------
   function $(s) { return document.querySelector(s); }
@@ -504,6 +505,14 @@
     });
   }
 
+  function platInfoCard(title, body) {
+    var d = document.createElement('div');
+    d.className = 'content-card';
+    d.innerHTML = '<div class="content-title">' + esc(title) + '</div>' +
+      (body ? '<div class="content-body">' + esc(body) + '</div>' : '');
+    return d;
+  }
+
   function renderPlatformSelector() {
     platLevel = 1; platPlatform = null;
     $('#cvTitle').textContent = (PLAT.label || '平台') + ' · 每日选题';
@@ -518,12 +527,13 @@
       var nCat = (PLAT.categories || []).length;
       var totalAll = (PLAT.platforms || []).length * nCat;
       var total = 0;
-      content.innerHTML = '';
+      var platRows = [];
       (PLAT.platforms || []).forEach(function (p) {
         var prefix = currentPlatDate + '|' + p.id + '|';
         var cnt = 0;
         (PLAT.categories || []).forEach(function (cid) { if (reads[prefix + cid]) cnt++; });
         total += cnt;
+        if (platUnreadOnly && cnt === nCat) return; // 只看未读：跳过已读完的平台
         var pct = nCat ? Math.round(cnt / nCat * 100) : 0;
         var card = document.createElement('div');
         card.className = 'plat-platform-card';
@@ -533,8 +543,19 @@
           '<div class="pp-bar"><div class="pp-bar-fill" style="width:' + pct + '%"></div></div>' +
           '<div class="pp-go">进入 →</div>';
         card.addEventListener('click', function () { openPlatformCategories(p.id); });
-        content.appendChild(card);
+        platRows.push(card);
       });
+      content.innerHTML = '';
+      var fbtn = document.createElement('div');
+      fbtn.className = 'plat-filter' + (platUnreadOnly ? ' on' : '');
+      fbtn.textContent = platUnreadOnly ? '✓ 只看未读（点此显示全部）' : '只看未读（点此筛选）';
+      fbtn.addEventListener('click', function () { platUnreadOnly = !platUnreadOnly; renderPlatformSelector(); });
+      content.appendChild(fbtn);
+      if (!platRows.length) {
+        content.appendChild(platInfoCard('今日已全部读完 ✓', '所有平台的 8 个品类均已标记已读'));
+      } else {
+        platRows.forEach(function (c) { content.appendChild(c); });
+      }
       var tpct = totalAll ? Math.round(total / totalAll * 100) : 0;
       var h = document.createElement('div');
       h.className = 'plat-progress-head';
@@ -561,6 +582,18 @@
       fetchPlatform(currentPlatDate).then(function (data) {
         var cats = (data && data.platforms && data.platforms[pid]) ? data.platforms[pid].categories : {};
         content.innerHTML = '';
+        // 品类维度已读统计
+        var nCat = (PLAT.categories || []).length;
+        var cCnt = 0, cUnread = [];
+        (PLAT.categories || []).forEach(function (cid) {
+          var k = currentPlatDate + '|' + pid + '|' + cid;
+          if (readMap[k]) cCnt++; else cUnread.push(catMap[cid] ? catMap[cid].label : cid);
+        });
+        var stat = document.createElement('div');
+        stat.className = 'plat-cat-stat';
+        stat.innerHTML = '已读 <b>' + cCnt + ' / ' + nCat + '</b>' +
+          (cUnread.length ? ' · 未读：' + esc(cUnread.join('、')) : ' · 全部读完 ✓');
+        content.appendChild(stat);
         (PLAT.categories || []).forEach(function (cid) {
           var cat = catMap[cid];
           var item = cats[cid] || {};
