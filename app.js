@@ -190,8 +190,7 @@
     // 追加「图片」板块（独立画廊，不参与每日内容生成）
     var ic = document.createElement('div');
     ic.className = 'station-card img-tile';
-    ic.innerHTML =
-      '<div class="station-photo-wrap img-tile-wrap">' + cameraSVG() + '</div>' +
+    ic.innerHTML = stationPhotoHTML('图片', cameraSVG()) +
       '<div class="station-label">图片</div>' +
       '<div class="station-hint">器物图库 →</div>';
     ic.addEventListener('click', openImages);
@@ -228,8 +227,7 @@
     if (PLAT) {
       var pc = document.createElement('div');
       pc.className = 'station-card plat-tile';
-      pc.innerHTML =
-        '<div class="station-photo-wrap plat-tile-wrap">' + platGlyphSVG() + '</div>' +
+      pc.innerHTML = stationPhotoHTML(PLAT.label || '平台', platGlyphSVG()) +
         '<div class="station-label">' + esc(PLAT.label || '平台') + '</div>' +
         '<div class="station-hint">每日选题 →</div>';
       pc.addEventListener('click', openPlatform);
