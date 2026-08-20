@@ -158,6 +158,17 @@
     } catch (e) {}
   }
 
+  function stationPhotoHTML(label, svg) {
+    var photoThumb = encodeURIComponent(label) + '@thumb.webp';
+    return '<div class="station-photo-wrap">' +
+      '<img class="station-photo" src="assets/station/' + photoThumb + '" alt="' + esc(label) + '"' +
+      ' decoding="async"' +
+      ' onload="this.nextElementSibling.style.display=\'none\';"' +
+      ' onerror="if(String(this.src).indexOf(\'@thumb.webp\')>=0){this.src=this.src.replace(\'@thumb.webp\',\'.webp\');}else if(String(this.src).endsWith(\'.webp\')){this.src=this.src.replace(\'.webp\',\'.png\');}else{this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';}">' +
+      '<div class="station-svg" style="display:none;">' + svg + '</div>' +
+    '</div>';
+  }
+
   // ---------- 主页：Marvis 工位网格 ----------
   function renderHome() {
     var scene = $('#scene');
@@ -169,16 +180,7 @@
       var card = document.createElement('div');
       card.className = 'station-card';
       var svg = window.OfficeArt.station({ label: cat.label, scarfColor: scarf }, i);
-      var photoThumb = encodeURIComponent(cat.label) + '@thumb.webp';
-      var photoWebp = encodeURIComponent(cat.label) + '.webp';
-      card.innerHTML =
-        '<div class="station-photo-wrap">' +
-          '<img class="station-photo" src="assets/station/' + photoThumb + '" alt="' + esc(cat.label) + '"' +
-          ' decoding="async"' +
-          ' onload="this.nextElementSibling.style.display=\'none\';"' +
-          ' onerror="if(String(this.src).indexOf(\'@thumb.webp\')>=0){this.src=this.src.replace(\'@thumb.webp\',\'.webp\');}else if(String(this.src).endsWith(\'.webp\')){this.src=this.src.replace(\'.webp\',\'.png\');}else{this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';}">' +
-          '<div class="station-svg" style="display:none;">' + svg + '</div>' +
-        '</div>' +
+      card.innerHTML = stationPhotoHTML(cat.label, svg) +
         '<div class="station-label">' + esc(cat.label) + '</div>' +
         '<div class="station-hint">点击进入 →</div>';
       card.addEventListener('click', function () { openCategory(cat.id); });
@@ -198,8 +200,7 @@
     // 追加「汇总」板块（手机桌面图标布局，每日各行业资讯）
     var hc = document.createElement('div');
     hc.className = 'station-card hub-tile';
-    hc.innerHTML =
-      '<div class="station-photo-wrap hub-tile-wrap">' + hubGlyphSVG() + '</div>' +
+    hc.innerHTML = stationPhotoHTML('汇总', hubGlyphSVG()) +
       '<div class="station-label">汇总</div>' +
       '<div class="station-hint">每日各行业资讯 →</div>';
     hc.addEventListener('click', openHub);
@@ -208,8 +209,7 @@
     // 追加「日常」板块（活人感灵感板，风趣幽默，由 AI 策展）
     var dc = document.createElement('div');
     dc.className = 'station-card daily-tile';
-    dc.innerHTML =
-      '<div class="station-photo-wrap hub-tile-wrap">' + dailyGlyphSVG() + '</div>' +
+    dc.innerHTML = stationPhotoHTML('日常', dailyGlyphSVG()) +
       '<div class="station-label">日常</div>' +
       '<div class="station-hint">每日生活灵感 →</div>';
     dc.addEventListener('click', openDaily);
@@ -218,8 +218,7 @@
     // 追加「法规」板块（每日知识：每本"书"从第一页往后翻，纯静态零成本）
     var lc = document.createElement('div');
     lc.className = 'station-card law-tile';
-    lc.innerHTML =
-      '<div class="station-photo-wrap hub-tile-wrap">' + lawGlyphSVG() + '</div>' +
+    lc.innerHTML = stationPhotoHTML('法规', lawGlyphSVG()) +
       '<div class="station-label">法规</div>' +
       '<div class="station-hint">每日法规知识 →</div>';
     lc.addEventListener('click', openLaw);
