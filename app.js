@@ -85,17 +85,24 @@
   }
   function copyText(t) {
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(t).then(function () { toast('已复制'); }, function () { fallbackCopy(t); });
+      navigator.clipboard.writeText(t).then(function () { toast('已复制到剪贴板'); }, function () { fallbackCopy(t); });
     } else { fallbackCopy(t); }
   }
   function fallbackCopy(t) {
     var ta = document.createElement('textarea');
     ta.value = t;
+    ta.setAttribute('readonly', '');
     ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
     ta.style.opacity = '0';
+    ta.style.fontSize = '16px';
     document.body.appendChild(ta);
+    ta.focus();
     ta.select();
-    try { document.execCommand('copy'); toast('已复制'); } catch (e) { toast('请长按选择复制'); }
+    try { ta.setSelectionRange(0, ta.value.length); } catch (e) {}
+    try { document.execCommand('copy'); toast('已复制到剪贴板'); }
+    catch (e) { toast('请长按选择复制'); }
     document.body.removeChild(ta);
   }
 
@@ -113,6 +120,42 @@
     var ov = (cat && cat.cell_titles) || {};
     if (meta.id && ov[meta.id]) return ov[meta.id];
     return meta.title || meta.id || '';
+  }
+
+  // ---------- 滚动记忆（按 模块+日期）----------
+  function scrollKey(catId, date) { return 'scroll::' + catId + '::' + date; }
+  function saveScroll() {
+    try {
+      var cv = $('#cv');
+      if (cv && cv.classList.contains('open') && currentCat && currentDate)
+        localStorage.setItem(scrollKey(currentCat, currentDate), String(cv.scrollTop));
+    } catch (e) {}
+  }
+  function restoreScroll(catId, date) {
+    try {
+      var cv = $('#cv');
+      var sp = parseInt(localStorage.getItem(scrollKey(catId, date)) || '0', 10);
+      cv.scrollTop = isNaN(sp) ? 0 : sp;
+    } catch (e) { var cv = $('#cv'); if (cv) cv.scrollTop = 0; }
+  }
+
+  // ---------- 品类卡已读 ----------
+  function readKey(catId, date, cellId) { return 'catread::' + catId + '::' + date + '::' + cellId; }
+  function isRead(catId, date, cellId) {
+    try { return localStorage.getItem(readKey(catId, date, cellId)) === '1'; } catch (e) { return false; }
+  }
+  function setRead(catId, date, cellId, v) {
+    try {
+      if (v) localStorage.setItem(readKey(catId, date, cellId), '1');
+      else localStorage.removeItem(readKey(catId, date, cellId));
+    } catch (e) {}
+  }
+  function updateReadCount(catId, date, meta) {
+    try {
+      var n = (meta || []).filter(function (m) { return isRead(catId, date, m.id); }).length;
+      var el = $('#cvReadCount');
+      if (el) el.textContent = n + ' / ' + (meta ? meta.length : 0) + ' 已读';
+    } catch (e) {}
   }
 
   // ---------- 主页：Marvis 工位网格 ----------
@@ -210,11 +253,11 @@
 
     $('#cvTitle').textContent = cat ? cat.label : catId;
     $('#cvDate').textContent = dateLabel(date).slice(0, 10) + ' ▾';
+    var rc = $('#cvReadCount'); if (rc) rc.textContent = '';
 
     var cv = $('#cv');
     cv.classList.add('open');
     cv.setAttribute('aria-hidden', 'false');
-    cv.scrollTop = 0;
 
     var content = $('#cvContent');
     content.innerHTML = '<div class="content-card"><div class="content-title">加载中…</div></div>';
@@ -231,16 +274,37 @@
       meta.forEach(function (cm) {
         var display = cellTitle(cat, cm);
         var body = (byId[cm.id] && byId[cm.id].body) || '今日内容生成中…';
+        var rd = isRead(catId, date, cm.id);
         var card = document.createElement('div');
         card.className = 'content-card';
-        card.innerHTML = '<div class="content-title">' + esc(display) + '</div><div class="content-body">' + esc(body) + '</div>';
-        card.addEventListener('click', function () { openDetail(display, body); });
+        card.innerHTML =
+          '<div class="content-head">' +
+            '<div class="content-title">' + esc(display) + '</div>' +
+            '<button class="content-read' + (rd ? ' active' : '') + '" data-cell="' + esc(cm.id) + '">' + (rd ? '✓ 已读' : '标记已读') + '</button>' +
+          '</div>' +
+          '<div class="content-body">' + esc(body) + '</div>';
+        card.addEventListener('click', function (e) {
+          if (e.target && e.target.classList && e.target.classList.contains('content-read')) return;
+          openDetail(display, body);
+        });
+        var rb = card.querySelector('.content-read');
+        rb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var now = !isRead(catId, date, cm.id);
+          setRead(catId, date, cm.id, now);
+          rb.classList.toggle('active', now);
+          rb.textContent = now ? '✓ 已读' : '标记已读';
+          updateReadCount(catId, date, meta);
+        });
         content.appendChild(card);
       });
+      updateReadCount(catId, date, meta);
+      restoreScroll(catId, date);
     });
   }
 
   function closeCategory() {
+    saveScroll();
     var cv = $('#cv');
     cv.classList.remove('open');
     cv.setAttribute('aria-hidden', 'true');
@@ -283,6 +347,7 @@
           c.className = 'date-chip' + (dt === currentDate ? ' active' : '');
           c.textContent = dateLabel(dt) + (dt === todayStr() ? '（今天）' : '');
           c.addEventListener('click', function () {
+            saveScroll();
             hideDateSheet();
             loadCategory(currentCat, dt);
           });
