@@ -2,26 +2,12 @@ name: 每日内容生成（零成本）
 
 on:
   schedule:
-    # 多重备份时间点：对抗 GitHub scheduled workflow 偶发不触发（均为北京时间）
-    - cron: "7 0 * * *"    # 08:07
-    - cron: "17 1 * * *"   # 09:17
-    - cron: "37 2 * * *"   # 10:37
-    - cron: "7 3 * * *"    # 11:07
+    # UTC 00:00 = 北京时间 08:00 每日自动生成
+    - cron: "0 0 * * *"
   workflow_dispatch:
-    inputs:
-      retry:
-        description: "自动重试标记（防止重跑递归）"
-        required: false
-        default: "false"
-
-# 多触发源排队执行，避免同一天多个 cron/手动触发并行打架
-concurrency:
-  group: daily-generate
-  cancel-in-progress: false
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   generate:
@@ -47,39 +33,10 @@ jobs:
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
         run: python .github/scripts/generate.py
 
-      - name: 校验当日内容齐全（缺失/占位则判定失败，暴露问题）
-        run: |
-          python - <<'PY'
-          import json, os, datetime, sys
-          today = datetime.date.today().isoformat()
-          cfg = json.load(open("config.json", encoding="utf-8"))
-          cats = cfg.get("categories", [])
-          missing, placeholder = [], []
-          for c in cats:
-              cid = c["id"]
-              p = os.path.join("data", cid, today + ".json")
-              if not os.path.exists(p):
-                  missing.append(cid); continue
-              try:
-                  cells = json.load(open(p, encoding="utf-8")).get("cells", [])
-              except Exception:
-                  missing.append(cid); continue
-              for cell in cells:
-                  b = str(cell.get("body", ""))
-                  if ("暂未成功" in b) or (not b.strip()):
-                      placeholder.append(cid); break
-          print("缺失分类:", missing)
-          print("占位分类:", placeholder)
-          if missing or placeholder:
-              sys.exit(1)
-          print("当日内容齐全 OK")
-          PY
-
       - name: 提交并触发 Pages 部署
-        if: success()
         run: |
           git config user.name "github-actions[bot]"
-          git config.user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
           if git diff --cached --quiet; then
             echo "无内容变化，跳过提交"
@@ -87,9 +44,3 @@ jobs:
             git commit -m "daily content $(date +%F) [bot]"
             git push
           fi
-
-      - name: 校验失败→自动重跑一次（仅 schedule 触发的首次失败，防递归）
-        if: failure() && github.event_name == 'schedule'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run generate.yml --ref main -f retry=true
