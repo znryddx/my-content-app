@@ -32,6 +32,8 @@ with open(os.path.join(ROOT, "config.json"), encoding="utf-8") as f:
 
 CATEGORIES = cfg.get("categories", [])
 CELLS = cfg.get("cells", [])
+# 轻角度品类库（含未单独开 tile 的器物，用于简报每日顺带，不生成独立数据文件）
+ANGLE_POOL = {a["id"]: a for a in cfg.get("rotation", {}).get("angle_pool", [])}
 DATE = datetime.date.today().isoformat()
 
 PRIMARY_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
@@ -309,6 +311,8 @@ def cat_label(cid):
     for c in CATEGORIES:
         if c["id"] == cid:
             return c.get("label", cid)
+    if cid in ANGLE_POOL:
+        return ANGLE_POOL[cid].get("label", cid)
     return cid
 
 
@@ -316,7 +320,38 @@ def cat_theme(cid):
     for c in CATEGORIES:
         if c["id"] == cid:
             return c.get("theme", c.get("label", cid))
+    if cid in ANGLE_POOL:
+        return ANGLE_POOL[cid].get("label", cid)
     return cid
+
+
+def nearest_festival(date_str):
+    """近似计算今日/临近节庆（农历节日用公历近似日，仅作内容驱动，非精确历法）。"""
+    try:
+        y, m, d = (int(x) for x in date_str.split("-"))
+    except Exception:
+        return None
+    fests = [
+        (1, 1, "元旦"), (1, 15, "年货节"), (1, 29, "春节"), (2, 12, "元宵"),
+        (2, 14, "情人节"), (3, 8, "妇女节"), (4, 5, "清明"), (5, 1, "劳动节"),
+        (5, 10, "端午"), (5, 10, "母亲节(近似)"), (6, 1, "儿童节"),
+        (6, 10, "父亲节(近似)"), (8, 19, "七夕"), (9, 10, "教师节"),
+        (9, 27, "中秋"), (10, 1, "国庆"), (10, 21, "重阳"), (11, 11, "双11"),
+        (12, 21, "冬至"), (12, 25, "圣诞"),
+    ]
+    days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+    cur = days[m - 1] + d
+
+    def doy(mo, da):
+        return days[mo - 1] + da
+    best, best_diff = None, 999
+    for fmo, fda, name in fests:
+        fd = doy(fmo, fda)
+        diff = abs(cur - fd)
+        diff = min(diff, 365 - diff)
+        if diff < best_diff:
+            best_diff, best = diff, name
+    return best if best_diff <= 6 else None
 
 
 def pick_main(pool, history, avoid):
@@ -355,7 +390,9 @@ def main():
     state = load_rotation()
     history = state.get("history", []) or []
     main_cat = pick_main(pool, history, avoid)
-    angles = pick_angles(pool, main_cat, history, n_angles)
+    # 轻角度从完整品类库（含未开 tile 的器物）抽取，保证简报每天带出多品类角度
+    angle_ids = [a["id"] for a in (rot.get("angle_pool") or [])] or list(pool)
+    angles = pick_angles(angle_ids, main_cat, history, n_angles)
     history.append(main_cat)
     state["history"] = history[-max(avoid, 14):]
     state["today_main"] = main_cat
@@ -372,11 +409,14 @@ def main():
             inc_sub = subs[seed % len(subs)]
 
     mt = cat_theme(main_cat).replace("{subtype}", inc_sub or "香品")
+    fest = nearest_festival(DATE)
+    fest_line = ("今日/临近节庆：%s。\n" % fest) if fest else "今日/临近节庆：无重大节庆（平常日）。\n"
     rotation_ctx = (
         "今日主推品类：%s（主题：%s）。\n"
         "简报需顺带轻角度的品类（各给一句轻量角度/钩子即可，不必展开）：%s。\n"
+        "%s"
         "主推与顺带品类由脚本固定，严禁自选其他品类作为主推；主推品类已确保与近 %d 天不重复。"
-        % (cat_label(main_cat), mt, "、".join(cat_label(a) for a in angles), avoid)
+        % (cat_label(main_cat), mt, "、".join(cat_label(a) for a in angles), fest_line, avoid)
     )
 
     # 待生成集合：每日常驻（简报/网感/素材/节气）+ 今日主推
