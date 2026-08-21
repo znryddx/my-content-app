@@ -26,30 +26,10 @@ PLATFORMS = PM.get("platforms", [])
 CAT_MAP = {c["id"]: c for c in cfg.get("categories", [])}
 DATE = datetime.date.today().isoformat()
 
-# 平台模块跟随「每日轮换」：仅生成今日主推 + 顺带轻角度品类，省 token；
-# 若读不到当日轮换状态（如独立工作流先跑），回退到 config 固定品类，保证不崩。
-ROT = cfg.get("rotation", {})
-_STATE_FILE = os.path.join(ROOT, ROT.get("state_file", "data/_rotation.json"))
-
-
-def _load_rotation():
-    if os.path.exists(_STATE_FILE):
-        try:
-            d = json.load(open(_STATE_FILE, encoding="utf-8"))
-            if isinstance(d, dict):
-                return d
-        except Exception:
-            pass
-    return {}
-
-
-_rot_state = _load_rotation()
-if _rot_state.get("date") == DATE and _rot_state.get("today_main"):
-    CAT_IDS = [_rot_state["today_main"]] + list(_rot_state.get("today_angles", []))
-    print("[info] 平台模块跟随今日轮换品类：%s" % CAT_IDS)
-else:
-    CAT_IDS = PM.get("categories", [])
-    print("[info] 未读到今日轮换状态，平台模块回退到 config 固定品类：%s" % CAT_IDS)
+# 平台模块固定生成 config 中 platforms_module.categories（8 个老品类），不跟随每日轮换，
+# 保持与「原模块」一致，且避免引用未单独开 tile 的轻角度品类。
+CAT_IDS = PM.get("categories", [])
+print("[info] 平台模块固定品类：%s" % CAT_IDS)
 
 PRIMARY_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
 MODELS = [PRIMARY_MODEL,
