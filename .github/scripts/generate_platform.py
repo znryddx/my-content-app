@@ -23,9 +23,33 @@ with open(os.path.join(ROOT, "config.json"), encoding="utf-8") as f:
 
 PM = cfg.get("platforms_module", {})
 PLATFORMS = PM.get("platforms", [])
-CAT_IDS = PM.get("categories", [])
 CAT_MAP = {c["id"]: c for c in cfg.get("categories", [])}
 DATE = datetime.date.today().isoformat()
+
+# 平台模块跟随「每日轮换」：仅生成今日主推 + 顺带轻角度品类，省 token；
+# 若读不到当日轮换状态（如独立工作流先跑），回退到 config 固定品类，保证不崩。
+ROT = cfg.get("rotation", {})
+_STATE_FILE = os.path.join(ROOT, ROT.get("state_file", "data/_rotation.json"))
+
+
+def _load_rotation():
+    if os.path.exists(_STATE_FILE):
+        try:
+            d = json.load(open(_STATE_FILE, encoding="utf-8"))
+            if isinstance(d, dict):
+                return d
+        except Exception:
+            pass
+    return {}
+
+
+_rot_state = _load_rotation()
+if _rot_state.get("date") == DATE and _rot_state.get("today_main"):
+    CAT_IDS = [_rot_state["today_main"]] + list(_rot_state.get("today_angles", []))
+    print("[info] 平台模块跟随今日轮换品类：%s" % CAT_IDS)
+else:
+    CAT_IDS = PM.get("categories", [])
+    print("[info] 未读到今日轮换状态，平台模块回退到 config 固定品类：%s" % CAT_IDS)
 
 PRIMARY_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
 MODELS = [PRIMARY_MODEL,
@@ -79,7 +103,7 @@ def build_prompt(plat):
     for cid in CAT_IDS:
         lines.append("- %s（主题：%s）" % (cat_label(cid), cat_theme(cid)))
     return (
-        "请为平台「%s」（调性：%s）生成今日（%s）以下 8 个品类的图文选题方向。"
+        "请为平台「%s」（调性：%s）生成今日（%s）以下 %d 个品类的图文选题方向。"
         "每个品类输出一个选题，含 4 个字段：\n"
         "  title：符合该平台调性的标题，≤20 字；\n"
         "  hook：开头钩子（选题角度 + 内容钩子），40-90 字；\n"
@@ -88,7 +112,7 @@ def build_prompt(plat):
         "品类列表：\n%s\n\n"
         '只返回一个 JSON 对象，结构严格为 {"<品类id>": {"title": string, "hook": string, "photo": string, "interact": string}}，'
         "品类 id 依次为：%s。不要任何解释文字、不要 markdown 代码块。"
-        % (plat["name"], tone, DATE, "\n".join(lines), ", ".join(CAT_IDS))
+        % (plat["name"], tone, DATE, len(CAT_IDS), "\n".join(lines), ", ".join(CAT_IDS))
     )
 
 
