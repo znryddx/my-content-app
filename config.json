@@ -42,7 +42,12 @@
         {
           "id": "topic",
           "title": "每日主推品类与选题",
-          "prompt": "【硬约束】严格遵循脚本注入的「今日主推品类」与「顺带轻角度品类」，不得自选其他主推。为今日主推品类给 1 个深度选题（切入角度+目标人群+转化路径）；为顺带品类各给 1 句轻量角度/钩子。主推品类必须与近 7 天已推品类不重复。"
+          "prompt": "【硬约束】严格遵循脚本注入的「今日主推品类」，不得自选其他主推。为今日主推品类给 1 个深度选题（切入角度+目标人群+转化路径）。主推品类必须与近 7 天已推品类不重复。"
+        },
+        {
+          "id": "angles",
+          "title": "品类轻角度（每日顺带）",
+          "prompt": "【硬约束】严格遵循脚本注入的「今日顺带轻角度品类」，为每个品类写 1 句轻量角度/钩子（≤40字，不必展开深度）。这些品类来自完整品类库，覆盖屏风/文房/螺钿/漆器/如意/器座/手把件/首饰盒/雕刻件/传统家具等，目的是在简报里每天带出多品类角度。每个品类一句即可，自然不硬凹。"
         },
         {
           "id": "titles",
@@ -58,6 +63,11 @@
           "id": "tags",
           "title": "爆款标题",
           "prompt": "给 3-5 条今日最值得用的爆款标题（不限定平台，强调抓人眼球、易传播、不夸大不违规），可一句话点出手法（如悬念/反差/数字），优先适配公众号、视频号、朋友圈等通用场景。"
+        },
+        {
+          "id": "festival",
+          "title": "今日节气 / 节庆",
+          "prompt": "【参考脚本注入的今日/临近节庆信息】写今日节气或节庆的内容借势点：文化由来 + 可借势的 1-2 个内容角度 + 适配送礼品类（送女生/长辈/情侣/客户各一句推荐）+ 是否适合发「突发福利/秒杀/抽奖」（适合则给一句紧迫感话术，不适合则说明原因）。若无重大节庆，写一句平常日的内容建议。"
         },
         {
           "id": "strategy",
@@ -178,125 +188,6 @@
       ]
     },
     {
-      "id": "screen",
-      "label": "屏风",
-      "theme": "屏风、挂屏等空间分隔与装饰陈设器物（含座屏、插屏、围屏、挂屏）",
-      "strategy": "屏风/挂屏（空间陈设与装饰）全案营销策略",
-      "cell_titles": {
-        "quote": "陈设金句"
-      }
-    },
-    {
-      "id": "wenfang",
-      "label": "文房",
-      "theme": "文房清供（笔筒、笔架、镇纸、墨床、水丞、砚滴、香薰等案头器物）",
-      "strategy": "文房清供（案头器物）全案营销策略",
-      "cell_titles": {
-        "quote": "文心金句"
-      }
-    },
-    {
-      "id": "ruyi",
-      "label": "如意",
-      "theme": "如意（陈设、礼器、把玩，含玉如意、木雕如意、镶嵌如意）",
-      "strategy": "如意（陈设/礼器/把玩）全案营销策略",
-      "cell_titles": {
-        "quote": "吉祥金句"
-      }
-    },
-    {
-      "id": "luodian",
-      "label": "螺钿",
-      "theme": "螺钿（贝壳镶嵌工艺器物，与百宝嵌同属镶嵌但仅用贝光）",
-      "strategy": "螺钿（贝雕镶嵌工艺）全案营销策略",
-      "cell_titles": {
-        "quote": "流光金句"
-      }
-    },
-    {
-      "id": "lacquer",
-      "label": "漆器",
-      "theme": "大漆器物（剔红、螺钿漆、戗金、犀皮等漆艺；含漆盒、漆盘、漆器摆件）",
-      "strategy": "大漆器物（漆艺）全案营销策略",
-      "cell_titles": {
-        "quote": "漆韵金句"
-      }
-    },
-    {
-      "id": "stand",
-      "label": "器座",
-      "theme": "器座（承托器物之座，含木座、漆木座、随形座，用于造像/赏石/雅玩陈设）",
-      "strategy": "器座（承托与陈设）全案营销策略",
-      "cell_titles": {
-        "quote": "托韵金句"
-      }
-    },
-    {
-      "id": "handpiece",
-      "label": "手把件",
-      "theme": "手把件（可握于掌中把玩的器物，含籽料、木雕、牙角、核雕等）",
-      "strategy": "手把件（掌中把玩）全案营销策略",
-      "cell_titles": {
-        "quote": "把玩金句"
-      }
-    },
-    {
-      "id": "jewelrybox",
-      "label": "首饰盒",
-      "theme": "首饰盒、首饰箱等收纳陈设器物（含紫檀/黄花梨/大漆/螺钿工艺）",
-      "strategy": "首饰盒/首饰箱（收纳与陈设）全案营销策略",
-      "cell_titles": {
-        "quote": "藏韵金句"
-      }
-    },
-    {
-      "id": "carving",
-      "label": "雕刻件",
-      "theme": "雕刻件（木雕、竹雕、牙角雕、石雕等立体雕刻陈设/把玩件）",
-      "strategy": "雕刻件（立体雕刻）全案营销策略",
-      "cell_titles": {
-        "quote": "雕韵金句"
-      }
-    },
-    {
-      "id": "furniture",
-      "label": "传统家具",
-      "theme": "传统家具（含柜子、案几、圈椅、罗汉床等明式/清式家具及家居陈设）",
-      "strategy": "传统家具/家居陈设全案营销策略",
-      "cell_titles": {
-        "quote": "木韵金句"
-      }
-    },
-    {
-      "id": "festival",
-      "label": "节气节庆",
-      "theme": "农历节气与公历/传统节庆（春节、元宵、清明、端午、七夕、中秋、重阳、母亲节、父亲节、教师节、年货节、双11等），作为内容与送礼/福利的时机驱动器",
-      "strategy": "节气节庆内容时机驱动策略（借势节点做选题、送礼、福利）",
-      "cell_titles": {},
-      "cells": [
-        {
-          "id": "jieqi",
-          "title": "今日节气 / 节日",
-          "prompt": "判断今日或临近的农历节气/传统节庆/公历节日（如春节、端午、中秋、七夕、重阳、母亲节、父亲节、年货节、双11等），给出其文化由来与可借势的内容点，3-5条。"
-        },
-        {
-          "id": "songli",
-          "title": "送礼提示",
-          "prompt": "结合今日/临近节庆，推荐适配的送礼品类与人群：送女生/送长辈/送情侣/送客户分别适合什么东方器物，各给一句推荐理由。"
-        },
-        {
-          "id": "benefit",
-          "title": "福利动作",
-          "prompt": "判断今日是否适合发「突发福利/秒杀/抽奖/限时限量」内容；若适合，给一句动作建议与紧迫感话术；若不适合，说明原因并给替代动作。"
-        },
-        {
-          "id": "angle",
-          "title": "内容角度",
-          "prompt": "基于今日/临近节庆，给 2-3 个今日可发的内容选题角度+钩子（角度+标题感+配图方向），自然不硬凹。"
-        }
-      ]
-    },
-    {
       "id": "wangan",
       "label": "网感",
       "theme": "网络热词、流行短句、网络热梗，用于自媒体文案与图文内容抓网感",
@@ -410,13 +301,24 @@
   "rotation": {
     "mode": "one_main_plus_brief_angles",
     "main_pool": [
-      "bracelet", "incense", "burner", "statue", "agarwood", "inlay", "teaware", "gift",
-      "screen", "wenfang", "ruyi", "luodian", "lacquer", "stand", "handpiece", "jewelrybox", "carving", "furniture"
+      "bracelet", "incense", "burner", "statue", "agarwood", "inlay", "teaware", "gift"
     ],
     "daily_main_count": 1,
     "brief_light_angles": 3,
     "avoid_repeat_days": 7,
-    "always_daily": ["brief", "wangan", "material", "festival"],
+    "always_daily": ["brief", "wangan", "material"],
+    "angle_pool": [
+      {"id": "screen", "label": "屏风"},
+      {"id": "wenfang", "label": "文房"},
+      {"id": "ruyi", "label": "如意"},
+      {"id": "luodian", "label": "螺钿"},
+      {"id": "lacquer", "label": "漆器"},
+      {"id": "stand", "label": "器座"},
+      {"id": "handpiece", "label": "手把件"},
+      {"id": "jewelrybox", "label": "首饰盒"},
+      {"id": "carving", "label": "雕刻件"},
+      {"id": "furniture", "label": "传统家具"}
+    ],
     "state_file": "data/_rotation.json"
   },
   "home": {
@@ -429,7 +331,7 @@
   "upload_endpoint": "https://marvis-upload.jiangxinyawu.workers.dev/upload",
   "platforms_module": {
     "label": "平台",
-    "note": "每日各平台选题方向（图文），跟随当日主推品类 + 顺带轻角度品类",
+    "note": "每日各平台选题方向（图文），固定 8 品类",
     "platforms": [
       { "id": "douyin", "name": "抖音", "note": "图文" },
       { "id": "xiaohongshu", "name": "小红书", "note": "图文" },
