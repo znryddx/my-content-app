@@ -56,7 +56,7 @@ SYSTEM = (
     "你是一个中文内容生成器，服务于一个每日更新的多品类内容 App。"
     "只返回合法的、压缩过的 JSON（不要 markdown 代码块、不要任何解释文字）。"
     "写作须用简体中文；每个版块内容要点化、控制篇幅：金句类每条不超过 30 字；"
-    "其余版块每条不超过 350 字；整体 JSON 总字数不超过 5200 字。"
+    "其余版块每条不超过 350 字；整体 JSON 总字数不超过 3800 字。"
     "【差异化硬约束】严禁套用通用模板；每个分类的内容必须基于其自身 theme 与 strategy 具体化，"
     "不同分类之间不得出现雷同的句式、数据、选题或策略。金句要贴合该品类的器物/文化意象，"
     "不可把同一组金句复制给多个分类；趋势要有该品类的真实电商体感（品类词、价位带、平台差异）。"
@@ -81,7 +81,7 @@ def load_feed():
     return None
 
 
-def build_batch(cats):
+def build_batch(cats, extra=""):
     """为一批分类构建单次请求的 prompt，要求返回 {catId: {cells:[...]}}。"""
     blocks = []
     for cat in cats:
@@ -110,6 +110,8 @@ def build_batch(cats):
         '只返回一个 JSON 对象，结构严格为 {"<分类id>": {"cells":[{"id":string,"title":string,"body":string}...]}}，'
         "每个分类的 cells 顺序与上面版块一致，id 与上面保持一致。不要任何解释文字、不要 markdown 代码块。"
     )
+    if extra:
+        head += "\n\n【脚本注入·今日主推约束（仅对简报生效，模型必须严格遵守）】\n%s\n" % extra
     return head
 
 
@@ -239,7 +241,7 @@ def _cat_has_content(res, cat_id, n_meta):
     return all(str(c.get("body", "")).strip() for c in gen)
 
 
-def call_batch(batch):
+def call_batch(batch, extra=""):
     # 每批仅一个分类（BATCH_SIZE=1）：聚焦单分类，避免免费模型在批量时掏空前几个分类
     cat = batch[0]
     cells_meta = cat.get("cells") or CELLS
@@ -247,7 +249,7 @@ def call_batch(batch):
     result = None
     for attempt in range(4):  # 单分类整体最多 4 轮（每轮内部已轮换 8 个模型 × 3 次）
         try:
-            res = call_model(build_batch([cat]))
+            res = call_model(build_batch([cat], extra if cat["id"] == "brief" else ""))
         except Exception as e:
             print("[error] 生成失败：%s" % e, flush=True)
             res = {}
@@ -284,6 +286,57 @@ def chunked(seq, n):
         yield seq[i:i + n]
 
 
+def load_rotation():
+    p = os.path.join(ROOT, cfg.get("rotation", {}).get("state_file", "data/_rotation.json"))
+    if os.path.exists(p):
+        try:
+            d = json.load(open(p, encoding="utf-8"))
+            if isinstance(d, dict):
+                return d
+        except Exception:
+            pass
+    return {"history": [], "today_main": None, "today_angles": []}
+
+
+def save_rotation(state):
+    p = os.path.join(ROOT, cfg.get("rotation", {}).get("state_file", "data/_rotation.json"))
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
+def cat_label(cid):
+    for c in CATEGORIES:
+        if c["id"] == cid:
+            return c.get("label", cid)
+    return cid
+
+
+def cat_theme(cid):
+    for c in CATEGORIES:
+        if c["id"] == cid:
+            return c.get("theme", c.get("label", cid))
+    return cid
+
+
+def pick_main(pool, history, avoid):
+    recent = set(history[-avoid:]) if avoid and avoid > 0 else set()
+    cands = [c for c in pool if c not in recent] or list(pool)
+    def lu(c):
+        return history[::-1].index(c) if c in history else 10 ** 9
+    cands.sort(key=lu, reverse=True)
+    return cands[0]
+
+
+def pick_angles(pool, main, history, n):
+    others = [c for c in pool if c != main]
+    recent = set(history[-3:]) - {main}
+    cands = [c for c in others if c not in recent] or others
+    rnd = random.Random(DATE)
+    rnd.shuffle(cands)
+    return cands[:n]
+
+
 def main():
     if not CATEGORIES:
         print("config.json 中没有 categories")
@@ -291,16 +344,61 @@ def main():
     if not API_KEY:
         print("[fatal] 未设置 LLM_API_KEY，无法生成。请在仓库 Settings → Secrets → Actions 添加 LLM_API_KEY。")
         sys.exit(1)
-    batches = list(chunked(CATEGORIES, BATCH_SIZE))
-    print("共 %d 个分类，分 %d 批调用（每批 %d 个），模型池 %d 个"
-          % (len(CATEGORIES), len(batches), BATCH_SIZE, len(MODELS)))
+
+    # ---- 轮换决策：每日 1 主推 + 顺带 3 轻角度 ----
+    rot = cfg.get("rotation", {})
+    pool = rot.get("main_pool") or [c["id"] for c in CATEGORIES if c["id"] not in rot.get("always_daily", [])]
+    always = rot.get("always_daily", [])
+    avoid = int(rot.get("avoid_repeat_days", 7) or 7)
+    n_angles = int(rot.get("brief_light_angles", 3) or 3)
+
+    state = load_rotation()
+    history = state.get("history", []) or []
+    main_cat = pick_main(pool, history, avoid)
+    angles = pick_angles(pool, main_cat, history, n_angles)
+    history.append(main_cat)
+    state["history"] = history[-max(avoid, 14):]
+    state["today_main"] = main_cat
+    state["today_angles"] = angles
+    state["date"] = DATE
+    save_rotation(state)
+
+    # 香品二级细分：今日定一个 subtype 注入 theme/strategy（确定性，按日期）
+    inc_sub = None
+    if "incense" in (always + [main_cat]):
+        subs = next((c.get("subtypes", []) for c in CATEGORIES if c["id"] == "incense"), []) or []
+        if subs:
+            seed = sum(int(ch) for ch in DATE if ch.isdigit())
+            inc_sub = subs[seed % len(subs)]
+
+    mt = cat_theme(main_cat).replace("{subtype}", inc_sub or "香品")
+    rotation_ctx = (
+        "今日主推品类：%s（主题：%s）。\n"
+        "简报需顺带轻角度的品类（各给一句轻量角度/钩子即可，不必展开）：%s。\n"
+        "主推与顺带品类由脚本固定，严禁自选其他品类作为主推；主推品类已确保与近 %d 天不重复。"
+        % (cat_label(main_cat), mt, "、".join(cat_label(a) for a in angles), avoid)
+    )
+
+    # 待生成集合：每日常驻（简报/网感/素材/节气）+ 今日主推
+    to_gen_ids = set(always) | {main_cat}
+    to_gen = [c for c in CATEGORIES if c["id"] in to_gen_ids]
+    print("今日主推：%s%s | 顺带：%s | 常驻：%s"
+          % (cat_label(main_cat), ("·" + inc_sub) if inc_sub else "",
+             "、".join(cat_label(a) for a in angles),
+             "、".join(cat_label(x) for x in always)))
+    print("本次生成 %d 个分类：%s" % (len(to_gen), ",".join(c["id"] for c in to_gen)))
+
     failed = []
-    for i, batch in enumerate(batches):
-        print("--- 第 %d/%d 批：%s ---" % (i + 1, len(batches), ",".join(c["id"] for c in batch)), flush=True)
-        ok = call_batch(batch)
+    for i, cat in enumerate(to_gen):
+        c = dict(cat)
+        if c["id"] == "incense" and inc_sub:
+            c["theme"] = (c.get("theme") or "").replace("{subtype}", inc_sub)
+            c["strategy"] = (c.get("strategy") or "").replace("{subtype}", inc_sub)
+        print("--- %d/%d：%s ---" % (i + 1, len(to_gen), c["id"]), flush=True)
+        ok = call_batch([c], rotation_ctx)
         if not ok:
-            failed.append(batch[0]["id"])
-        if i < len(batches) - 1:
+            failed.append(c["id"])
+        if i < len(to_gen) - 1:
             time.sleep(25)  # 分类间间隔，进一步避开免费档 RPM
     print("All done.")
     if failed:
