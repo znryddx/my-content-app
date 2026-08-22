@@ -2,8 +2,11 @@ name: 每日内容生成（零成本）
 
 on:
   schedule:
-    # UTC 00:00 = 北京时间 08:00 每日自动生成
-    - cron: "0 0 * * *"
+    # 多错峰触发，规避 GitHub 对单一 scheduled workflow 的偶发跳过（免费、纯配置）
+    # UTC 0/5/10 约= 北京时间 08/13/18 点，命中其一即可生成当日内容
+    - cron: "7 0 * * *"
+    - cron: "7 5 * * *"
+    - cron: "7 10 * * *"
   workflow_dispatch:
 
 permissions:
