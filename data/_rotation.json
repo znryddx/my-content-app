@@ -2,13 +2,14 @@
   "history": [
     "bracelet",
     "incense",
-    "burner"
+    "burner",
+    "statue"
   ],
-  "today_main": "burner",
+  "today_main": "statue",
   "today_angles": [
-    "lacquer",
-    "screen",
-    "jewelrybox"
+    "stand",
+    "furniture",
+    "ruyi"
   ],
   "date": "2026-08-23"
 }
