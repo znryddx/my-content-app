@@ -4,13 +4,14 @@
     "incense",
     "burner",
     "statue",
-    "agarwood"
+    "agarwood",
+    "inlay"
   ],
   "today_main": "inlay",
   "today_angles": [
-    "screen",
-    "wenfang",
-    "luodian"
+    "handpiece",
+    "stand",
+    "screen"
   ],
   "date": "2026-08-24"
 }
