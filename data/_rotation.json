@@ -5,9 +5,10 @@
     "burner",
     "statue",
     "agarwood",
-    "inlay"
+    "inlay",
+    "teaware"
   ],
-  "today_main": "inlay",
+  "today_main": "teaware",
   "today_angles": [
     "handpiece",
     "stand",
