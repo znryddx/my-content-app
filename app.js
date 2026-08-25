@@ -317,11 +317,25 @@
   }
 
   // ---------- 内容详情弹层 ----------
-  function openDetail(title, body) {
+  function openDetail(title, body, type) {
     currentDetail.title = title;
     currentDetail.body = body;
     $('#detailTitle').textContent = title;
     $('#detailBody').textContent = body;
+    var dt = $('#detailType');
+    if (dt) {
+      if (type) {
+        var cls = 'short';
+        if (type === '长文案') cls = 'long';
+        else if (type === '高净值客群') cls = 'vip';
+        else if (type === '文化营销') cls = 'culture';
+        dt.className = 'detail-type type-' + cls;
+        dt.textContent = type;
+      } else {
+        dt.className = 'detail-type';
+        dt.textContent = '';
+      }
+    }
     var m = $('#detailModal');
     m.classList.add('show');
     m.setAttribute('aria-hidden', 'false');
@@ -833,7 +847,15 @@
 
   // ---------- 屏风柜子文案板块（4 分类朋友圈文案，日更/可复制/可标记已读/有历史日期）----------
   var SC_DATA = './data/pingfenguizi/';
-  var scState = { dates: [], date: null, data: null, cat: null };
+  var scState = { dates: [], date: null, data: null, cat: null, filter: 'all' };
+  var SC_TYPES = [
+    { id: 'all', label: '全部' },
+    { id: 'short', label: '短句' },
+    { id: 'long', label: '长文案' },
+    { id: 'vip', label: '高净值客群' },
+    { id: 'culture', label: '文化营销' }
+  ];
+  var SC_TYPE_LABEL = { short: '短句', long: '长文案', vip: '高净值客群', culture: '文化营销' };
   function scGlyphSVG() {
     return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
       '<rect x="8" y="11" width="13" height="26" rx="2"/><rect x="27" y="11" width="13" height="26" rx="2"/>' +
@@ -880,6 +902,7 @@
       }
       if (!scState.cat || !findCat(scState.cat)) scState.cat = scState.data.cats[0].id;
       renderSCTabs();
+      renderSCFilter();
       renderSCItems();
     });
   }
@@ -897,6 +920,23 @@
       tabs.appendChild(t);
     });
   }
+  function renderSCFilter() {
+    var box = $('#scFilter');
+    if (!box) return;
+    box.innerHTML = '';
+    SC_TYPES.forEach(function (t) {
+      var chip = document.createElement('button');
+      chip.className = 'sc-filter-chip' + (t.id === scState.filter ? ' active' : '');
+      chip.textContent = t.label;
+      chip.addEventListener('click', function () {
+        scState.filter = t.id;
+        renderSCFilter();
+        renderSCItems();
+        var cc = $('#scContent'); if (cc) cc.scrollTop = 0;
+      });
+      box.appendChild(chip);
+    });
+  }
   function renderSCItems() {
     var cat = findCat(scState.cat);
     var c = $('#scContent');
@@ -905,19 +945,25 @@
       c.innerHTML = '<div class="content-card"><div class="content-body">该分类暂无文案</div></div>';
       return;
     }
-    cat.items.forEach(function (text, idx) {
+    var shown = 0;
+    cat.items.forEach(function (item, idx) {
+      var text = (typeof item === 'string') ? item : (item && item.text) || '';
+      var type = (typeof item === 'string') ? 'short' : (item && item.type) || 'short';
+      if (scState.filter !== 'all' && type !== scState.filter) return;
+      shown++;
       var rd = scIsRead(scState.date, cat.id, idx);
       var card = document.createElement('div');
       card.className = 'content-card sc-item' + (rd ? ' read' : '');
       card.innerHTML =
         '<div class="content-head">' +
           '<div class="content-title sc-idx">#' + (idx + 1) + '</div>' +
+          '<span class="sc-type type-' + type + '">' + (SC_TYPE_LABEL[type] || '短句') + '</span>' +
           '<button class="content-read' + (rd ? ' active' : '') + '">应读</button>' +
         '</div>' +
         '<div class="content-body">' + esc(text) + '</div>';
       card.addEventListener('click', function (e) {
         if (e.target && e.target.classList && e.target.classList.contains('content-read')) return;
-        openDetail(cat.label + ' · #' + (idx + 1), text);
+        openDetail(cat.label + ' · #' + (idx + 1), text, SC_TYPE_LABEL[type] || '');
       });
       var rb = card.querySelector('.content-read');
       rb.addEventListener('click', function (e) {
@@ -931,6 +977,9 @@
       rb.textContent = rd ? '✓ 已读' : '标记已读';
       c.appendChild(card);
     });
+    if (!shown) {
+      c.innerHTML = '<div class="content-card"><div class="content-body">该类型暂无文案</div></div>';
+    }
   }
   function openSCDatePicker() {
     fetchJSON(SC_DATA + 'dates.json').then(function (dates) {

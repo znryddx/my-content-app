@@ -475,6 +475,41 @@ body {
 .sc-item.read .content-body { opacity: 0.5; }
 .sc-item.read .content-title { opacity: 0.6; }
 
+/* 类型筛选条 */
+.sc-filter {
+  display: flex; gap: 7px; overflow-x: auto; padding: 2px 16px 10px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  border-bottom: 1px solid var(--line);
+}
+.sc-filter::-webkit-scrollbar { display: none; }
+.sc-filter-chip {
+  flex: 0 0 auto; padding: 5px 12px; border: 1px solid var(--line); background: #fff;
+  border-radius: 999px; font-size: 12px; color: var(--muted); white-space: nowrap;
+  cursor: pointer; font-family: inherit; transition: all 0.15s ease;
+}
+.sc-filter-chip.active { border-color: #2f6f5b; color: #2f6f5b; background: rgba(47,111,91,0.08); font-weight: 600; }
+
+/* 类型徽章（卡片 + 详情共用） */
+.sc-type {
+  flex: 1 1 auto; min-width: 0; text-align: right;
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+  align-self: center; justify-self: end;
+}
+.type-short  { color: #6b7280; background: #f3f4f6; }
+.type-long   { color: #2f6f5b; background: rgba(47,111,91,0.10); }
+.type-vip    { color: #b45309; background: rgba(180,83,9,0.10); }
+.type-culture{ color: #7c3aed; background: rgba(124,58,237,0.10); }
+
+/* 详情里的类型标签 */
+.detail-type {
+  display: none; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 6px;
+  margin-left: 8px; align-self: center;
+}
+.detail-type.type-short  { display: inline-block; color: #6b7280; background: #f3f4f6; }
+.detail-type.type-long   { display: inline-block; color: #2f6f5b; background: rgba(47,111,91,0.10); }
+.detail-type.type-vip    { display: inline-block; color: #b45309; background: rgba(180,83,9,0.10); }
+.detail-type.type-culture{ display: inline-block; color: #7c3aed; background: rgba(124,58,237,0.10); }
+
 /* ===== 平台板块（每日各平台选题方向 + 已读）===== */
 .station-card.plat-tile { cursor: pointer; }
 .plat-tile-wrap {
