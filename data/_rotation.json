@@ -7,13 +7,14 @@
     "agarwood",
     "inlay",
     "teaware",
-    "gift"
+    "gift",
+    "bracelet"
   ],
-  "today_main": "gift",
+  "today_main": "bracelet",
   "today_angles": [
-    "handpiece",
-    "stand",
-    "screen"
+    "wenfang",
+    "luodian",
+    "ruyi"
   ],
-  "date": "2026-08-24"
+  "date": "2026-08-25"
 }
