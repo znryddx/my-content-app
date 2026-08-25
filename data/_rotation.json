@@ -8,13 +8,14 @@
     "inlay",
     "teaware",
     "gift",
-    "bracelet"
+    "bracelet",
+    "incense"
   ],
-  "today_main": "bracelet",
+  "today_main": "incense",
   "today_angles": [
-    "wenfang",
     "luodian",
-    "ruyi"
+    "furniture",
+    "carving"
   ],
   "date": "2026-08-25"
 }
