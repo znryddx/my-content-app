@@ -457,6 +457,24 @@ body {
   .law-board .cv-content { grid-template-columns: 1fr; }
 }
 
+/* ===== 屏风柜子文案板块（4 分类朋友圈文案）===== */
+.station-card.sc-tile { cursor: pointer; }
+.sc-board .cv-content { grid-template-columns: 1fr; gap: 12px; align-content: start; }
+.sc-tabs {
+  display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px 6px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.sc-tabs::-webkit-scrollbar { display: none; }
+.sc-tab {
+  flex: 0 0 auto; padding: 7px 14px; border: 1px solid var(--line); background: #fff;
+  border-radius: 999px; font-size: 13px; color: var(--muted); white-space: nowrap;
+  cursor: pointer; font-family: inherit; transition: all 0.15s ease;
+}
+.sc-tab.active { border-color: #b45309; color: #b45309; background: rgba(180,83,9,0.07); font-weight: 600; }
+.sc-item .sc-idx { font-size: 12px; color: var(--muted); font-weight: 600; }
+.sc-item.read .content-body { opacity: 0.5; }
+.sc-item.read .content-title { opacity: 0.6; }
+
 /* ===== 平台板块（每日各平台选题方向 + 已读）===== */
 .station-card.plat-tile { cursor: pointer; }
 .plat-tile-wrap {

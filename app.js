@@ -223,6 +223,15 @@
     lc.addEventListener('click', openLaw);
     grid.appendChild(lc);
 
+    // 追加「屏风柜子文案」板块（4 分类朋友圈文案，日更/可复制/可标记已读/有历史日期）
+    var sc = document.createElement('div');
+    sc.className = 'station-card sc-tile';
+    sc.innerHTML = stationPhotoHTML('屏风柜子', scGlyphSVG()) +
+      '<div class="station-label">屏风柜子文案</div>' +
+      '<div class="station-hint">每日朋友圈文案 →</div>';
+    sc.addEventListener('click', openScreenCabinet);
+    grid.appendChild(sc);
+
     // 追加「平台」板块（每日各平台选题方向 + 已读）
     if (PLAT) {
       var pc = document.createElement('div');
@@ -822,6 +831,130 @@
     if (s) { s.classList.remove('show'); s.setAttribute('aria-hidden', 'true'); }
   }
 
+  // ---------- 屏风柜子文案板块（4 分类朋友圈文案，日更/可复制/可标记已读/有历史日期）----------
+  var SC_DATA = './data/pingfenguizi/';
+  var scState = { dates: [], date: null, data: null, cat: null };
+  function scGlyphSVG() {
+    return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="8" y="11" width="13" height="26" rx="2"/><rect x="27" y="11" width="13" height="26" rx="2"/>' +
+      '<path d="M14.5 7v34M33.5 7v34"/>' +
+      '<circle cx="14.5" cy="24" r="2.2" fill="#b45309" stroke="none"/><circle cx="33.5" cy="24" r="2.2" fill="#b45309" stroke="none"/>' +
+      '<path d="M11 33c2.5-2.5 4-2.5 7 0M30 33c2.5-2.5 4-2.5 7 0" stroke="#f59e0b"/></svg>';
+  }
+  function scReadKey(date, catId, idx) { return 'sc::' + date + '::' + catId + '::' + idx; }
+  function scIsRead(date, catId, idx) {
+    try { return localStorage.getItem(scReadKey(date, catId, idx)) === '1'; } catch (e) { return false; }
+  }
+  function scSetRead(date, catId, idx, v) {
+    try { if (v) localStorage.setItem(scReadKey(date, catId, idx), '1'); else localStorage.removeItem(scReadKey(date, catId, idx)); } catch (e) {}
+  }
+  function findCat(id) {
+    return (scState.data && scState.data.cats || []).filter(function (x) { return x.id === id; })[0];
+  }
+  function openScreenCabinet() {
+    var b = $('#scBoard');
+    $('#scTitle').textContent = '屏风柜子文案';
+    b.classList.add('open'); b.setAttribute('aria-hidden', 'false'); b.scrollTop = 0;
+    if (scState.dates.length) { loadScreenCabinet(scState.dates[scState.dates.length - 1]); return; }
+    fetchJSON(SC_DATA + 'dates.json').then(function (dates) {
+      scState.dates = Array.isArray(dates) ? dates : [];
+      var date = scState.dates.length ? scState.dates[scState.dates.length - 1] : todayStr();
+      loadScreenCabinet(date);
+    });
+  }
+  function closeScreenCabinet() {
+    var b = $('#scBoard');
+    b.classList.remove('open'); b.setAttribute('aria-hidden', 'true');
+  }
+  function loadScreenCabinet(date) {
+    scState.date = date;
+    $('#scDate').textContent = dateLabel(date).slice(0, 10) + ' ▾';
+    var c = $('#scContent');
+    c.innerHTML = '<div class="content-card"><div class="content-title">加载中…</div></div>';
+    fetchJSON(SC_DATA + date + '.json').then(function (data) {
+      scState.data = (data && data.cats) ? data : { cats: [] };
+      if (!scState.data.cats.length) {
+        c.innerHTML = '<div class="content-card"><div class="content-body">今日文案生成中…（每日由 AI 自动刷新）</div></div>';
+        $('#scTabs').innerHTML = '';
+        return;
+      }
+      if (!scState.cat || !findCat(scState.cat)) scState.cat = scState.data.cats[0].id;
+      renderSCTabs();
+      renderSCItems();
+    });
+  }
+  function renderSCTabs() {
+    var tabs = $('#scTabs');
+    tabs.innerHTML = '';
+    scState.data.cats.forEach(function (cat) {
+      var t = document.createElement('button');
+      t.className = 'sc-tab' + (cat.id === scState.cat ? ' active' : '');
+      t.textContent = cat.label;
+      t.addEventListener('click', function () {
+        scState.cat = cat.id; renderSCTabs(); renderSCItems();
+        var cc = $('#scContent'); if (cc) cc.scrollTop = 0;
+      });
+      tabs.appendChild(t);
+    });
+  }
+  function renderSCItems() {
+    var cat = findCat(scState.cat);
+    var c = $('#scContent');
+    c.innerHTML = '';
+    if (!cat || !cat.items || !cat.items.length) {
+      c.innerHTML = '<div class="content-card"><div class="content-body">该分类暂无文案</div></div>';
+      return;
+    }
+    cat.items.forEach(function (text, idx) {
+      var rd = scIsRead(scState.date, cat.id, idx);
+      var card = document.createElement('div');
+      card.className = 'content-card sc-item' + (rd ? ' read' : '');
+      card.innerHTML =
+        '<div class="content-head">' +
+          '<div class="content-title sc-idx">#' + (idx + 1) + '</div>' +
+          '<button class="content-read' + (rd ? ' active' : '') + '">应读</button>' +
+        '</div>' +
+        '<div class="content-body">' + esc(text) + '</div>';
+      card.addEventListener('click', function (e) {
+        if (e.target && e.target.classList && e.target.classList.contains('content-read')) return;
+        openDetail(cat.label + ' · #' + (idx + 1), text);
+      });
+      var rb = card.querySelector('.content-read');
+      rb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var now = !scIsRead(scState.date, cat.id, idx);
+        scSetRead(scState.date, cat.id, idx, now);
+        rb.classList.toggle('active', now);
+        rb.textContent = now ? '✓ 已读' : '标记已读';
+        card.classList.toggle('read', now);
+      });
+      rb.textContent = rd ? '✓ 已读' : '标记已读';
+      c.appendChild(card);
+    });
+  }
+  function openSCDatePicker() {
+    fetchJSON(SC_DATA + 'dates.json').then(function (dates) {
+      scState.dates = Array.isArray(dates) ? dates : scState.dates;
+      var list = $('#scDateList');
+      if (!scState.dates.length) {
+        list.innerHTML = '<div class="date-chip">暂无历史，部署后每日自动生成</div>';
+      } else {
+        list.innerHTML = '';
+        scState.dates.forEach(function (dt) {
+          var ch = document.createElement('div');
+          ch.className = 'date-chip' + (dt === scState.date ? ' active' : '');
+          ch.textContent = dateLabel(dt) + (dt === todayStr() ? '（今天）' : '');
+          ch.addEventListener('click', function () { hideSCDateSheet(); loadScreenCabinet(dt); });
+          list.appendChild(ch);
+        });
+      }
+      var s = $('#scDateSheet'); s.classList.add('show'); s.setAttribute('aria-hidden', 'false');
+    });
+  }
+  function hideSCDateSheet() {
+    var s = $('#scDateSheet'); s.classList.remove('show'); s.setAttribute('aria-hidden', 'true');
+  }
+
   // ---------- 平台模块（每日各平台选题方向 + 已读）----------
   function platGlyphSVG() {
     return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#3a6b5e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -1034,6 +1167,10 @@
       $('#lawBack').addEventListener('click', closeLaw);
       $('#lawDate').addEventListener('click', openLawDatePicker);
       $('#lawDateClose').addEventListener('click', hideLawDateSheet);
+
+      $('#scBack').addEventListener('click', closeScreenCabinet);
+      $('#scDate').addEventListener('click', openSCDatePicker);
+      $('#scDateClose').addEventListener('click', hideSCDateSheet);
       var lawInput = $('#lawDateInput');
       if (lawInput) lawInput.addEventListener('change', function () {
         var v = lawInput.value;
