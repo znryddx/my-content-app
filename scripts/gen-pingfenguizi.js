@@ -32,10 +32,15 @@ const CATS = [
 const TYPES = ['short', 'long', 'vip', 'culture'];
 
 function todayStr() {
-  const d = new Date();
-  const m = ('0' + (d.getMonth() + 1)).slice(-2);
-  const day = ('0' + d.getDate()).slice(-2);
-  return d.getFullYear() + '-' + m + '-' + day;
+  // 用北京时间(Asia/Shanghai)算"今天"，避免 GitHub Actions runner 默认 UTC 导致生成慢一天的日期
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const get = (t) => parts.find((p) => p.type === t).value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 function buildPrompt() {
