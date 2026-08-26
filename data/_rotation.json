@@ -9,13 +9,14 @@
     "teaware",
     "gift",
     "bracelet",
+    "incense",
     "incense"
   ],
-  "today_main": "incense",
+  "today_main": "burner",
   "today_angles": [
-    "luodian",
-    "furniture",
-    "carving"
+    "screen",
+    "wenfang",
+    "ruyi"
   ],
-  "date": "2026-08-25"
+  "date": "2026-08-26"
 }
