@@ -419,8 +419,11 @@ def main():
         % (cat_label(main_cat), mt, "、".join(cat_label(a) for a in angles), fest_line, avoid)
     )
 
-    # 待生成集合：每日常驻（简报/网感/素材/节气）+ 今日主推
-    to_gen_ids = set(always) | {main_cat}
+    # 待生成集合：默认轮换（常驻+主推）；FULL_REGEN=1 时全量生成所有分类
+    if os.environ.get("FULL_REGEN") == "1":
+        to_gen_ids = {c["id"] for c in CATEGORIES}
+    else:
+        to_gen_ids = set(always) | {main_cat}
     to_gen = [c for c in CATEGORIES if c["id"] in to_gen_ids]
     print("今日主推：%s%s | 顺带：%s | 常驻：%s"
           % (cat_label(main_cat), ("·" + inc_sub) if inc_sub else "",

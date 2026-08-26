@@ -8,6 +8,12 @@ on:
     - cron: "7 5 * * *"
     - cron: "7 10 * * *"
   workflow_dispatch:
+    inputs:
+      full:
+        description: '全量生成所有分类（默认轮换）'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -34,6 +40,7 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
+          FULL_REGEN: ${{ github.event.inputs.full && '1' || '' }}
         run: python .github/scripts/generate.py
 
       - name: 提交并触发 Pages 部署
