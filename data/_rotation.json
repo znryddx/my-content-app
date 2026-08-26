@@ -10,13 +10,14 @@
     "gift",
     "bracelet",
     "incense",
-    "incense"
+    "incense",
+    "burner"
   ],
   "today_main": "burner",
   "today_angles": [
-    "screen",
-    "wenfang",
-    "ruyi"
+    "furniture",
+    "carving",
+    "lacquer"
   ],
   "date": "2026-08-26"
 }
