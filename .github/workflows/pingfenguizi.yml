@@ -19,12 +19,14 @@ jobs:
       - name: 生成今日文案
         run: node scripts/gen-pingfenguizi.js
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SC_MODEL: ${{ vars.SC_MODEL || 'gpt-4o-mini' }}
-      - name: 提交
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
+          SC_MODEL: ${{ vars.SC_MODEL || 'google/gemma-4-31b-it:free' }}
+      - name: 提交并推送
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/pingfenguizi
+          git add data/pingfenguizi scripts gen-pingfenguizi.js 2>/dev/null || git add data/pingfenguizi scripts/gen-pingfenguizi.js
           git commit -m "chore: 屏风柜子文案 $(date +%F)" || echo "no changes"
           git push
