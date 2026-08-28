@@ -21,8 +21,8 @@ jobs:
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
-          LLM_MODEL: ${{ vars.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
-          SC_MODEL: ${{ vars.SC_MODEL || 'google/gemma-4-31b-it:free' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
+          SC_MODEL: ${{ secrets.SC_MODEL || 'google/gemma-4-31b-it:free' }}
       - name: 提交并推送
         run: |
           git config user.name "github-actions[bot]"
