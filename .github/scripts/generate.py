@@ -50,6 +50,17 @@ MODELS = [PRIMARY_MODEL,
           "thudm/glm-4-9b:free"]
 # 逐次退避基数（秒），叠加随机抖动避免多模型同时重试被集体限流
 BACKOFF = [15, 30, 60]
+# —— 备用通道：GitHub Models（Actions 内置 GITHUB_TOKEN，零成本零配置）——
+# OpenRouter 免费档高峰期会长时间排队/限流，此时切换到 GitHub Models 保底，
+# 避免整条日更链路因为单一供应商抖动而中断。
+GH_TOKEN = os.environ.get("GH_MODELS_TOKEN", "") or os.environ.get("GITHUB_TOKEN", "")
+GH_ENDPOINT = "https://models.inference.ai.azure.com/chat/completions"
+GH_MODELS = [
+    "openai/gpt-4.1-mini",
+    "openai/gpt-4o-mini",
+    "meta/Llama-3.3-70B-Instruct",
+    "mistralai/Mistral-Nemo",
+]
 _BASE = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 ENDPOINT = _BASE + "/chat/completions"
 API_KEY = os.environ.get("LLM_API_KEY", "")
@@ -126,65 +137,80 @@ def extract_json(text):
     return json.loads(text.strip())
 
 
-def call_model(user):
-    if not API_KEY:
-        raise RuntimeError("缺少 LLM_API_KEY 环境变量（请在 Actions Secrets 中配置）")
+def _call_once(endpoint, key, model, user, timeout=90):
+    """单次调用，返回 (ok, result)；result 为解析后的 JSON 或错误描述字符串"""
     messages = [
         {"role": "system", "content": SYSTEM},
         {"role": "user", "content": user},
     ]
+    payload = json.dumps({
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 6000,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        endpoint, data=payload,
+        headers={
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/znryddx/my-content-app",
+            "X-Title": "my-content-app",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return True, extract_json(data["choices"][0]["message"]["content"])
+    except urllib.error.HTTPError as e:
+        detail = ""
+        try:
+            detail = e.read().decode("utf-8", "ignore")[:300]
+        except Exception:
+            pass
+        return False, ("HTTP%d:%s" % (e.code, detail))
+    except Exception as e:
+        return False, str(e)
+
+
+def call_model(user):
+    """依次尝试：OpenRouter 免费模型池 -> GitHub Models 池，任一成功即返回"""
+    providers = []
+    if API_KEY:
+        providers.append(("OpenRouter", ENDPOINT, API_KEY, MODELS))
+    if GH_TOKEN:
+        providers.append(("GitHubModels", GH_ENDPOINT, GH_TOKEN, GH_MODELS))
+    if not providers:
+        raise RuntimeError("缺少 LLM_API_KEY 环境变量（请在 Actions Secrets 中配置）")
+
     last = None
-    for model in MODELS:
-        for attempt in range(3):  # 每个模型最多 3 次
-            payload = json.dumps({
-                "model": model,
-                "messages": messages,
-                "temperature": 0.7,
-                "max_tokens": 6000,
-            }).encode("utf-8")
-            req = urllib.request.Request(
-                ENDPOINT, data=payload,
-                headers={
-                    "Authorization": "Bearer " + API_KEY,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://github.com/znryddx/my-content-app",
-                    "X-Title": "my-content-app",
-                },
-                method="POST",
-            )
-            try:
-                with urllib.request.urlopen(req, timeout=90) as r:
-                    data = json.loads(r.read().decode("utf-8"))
-                return extract_json(data["choices"][0]["message"]["content"])
-            except urllib.error.HTTPError as e:
-                detail = ""
-                try:
-                    detail = e.read().decode("utf-8", "ignore")[:400]
-                except Exception:
-                    pass
-                if e.code in (401, 403):
-                    raise RuntimeError("HTTP %d 致命错误（密钥无效），已停止：%s" % (e.code, detail))
-                if e.code == 404:
-                    print("[warn] 模型 %s 不存在，换下一个" % model, flush=True)
-                    break  # 跳到下一个模型
+    for pname, endpoint, key, models in providers:
+        print("[info] 尝试通道: %s（%d 个模型）" % (pname, len(models)), flush=True)
+        for model in models:
+            for attempt in range(3):
+                ok, res = _call_once(endpoint, key, model, user)
+                if ok:
+                    print("[ok] %s 命中模型 %s" % (pname, model), flush=True)
+                    return res
+                # 密钥类致命错误：直接放弃该通道
+                if isinstance(res, str) and (res.startswith("HTTP401") or res.startswith("HTTP403")):
+                    print("[warn] %s 密钥不可用（%s），切换通道" % (pname, res[:120]), flush=True)
+                    last = res
+                    break
+                if isinstance(res, str) and res.startswith("HTTP404"):
+                    print("[warn] %s 模型 %s 不存在，换下一个" % (pname, model), flush=True)
+                    last = res
+                    break
                 wait = BACKOFF[min(attempt, len(BACKOFF) - 1)]
                 wait = int(wait + random.uniform(0, wait * 0.4))
-                ra = e.headers.get("Retry-After") if hasattr(e, "headers") else None
-                if ra and str(ra).isdigit():
-                    wait = max(wait, int(ra) + 3)
-                print("[warn] 模型 %s 第%d次失败(HTTP %d)：%ds后重试 %s"
-                      % (model, attempt + 1, e.code, wait, detail), flush=True)
-                last = e
+                print("[warn] %s %s 第%d次失败：%ds后重试 %s"
+                      % (pname, model, attempt + 1, wait, str(res)[:120]), flush=True)
+                last = res
                 if attempt < 2:
                     time.sleep(wait)
-            except Exception as e:
-                print("[warn] 模型 %s 第%d次失败：%s" % (model, attempt + 1, e), flush=True)
-                last = e
-                if attempt < 2:
-                    time.sleep(BACKOFF[0] + int(random.uniform(0, 6)))
-        # 无论 404 跳出还是三次用尽，都尝试下一个模型
-        continue
-    raise RuntimeError("所有免费模型均失败（多因排队/限流），请稍后重试或换密钥: %s" % last)
+        print("[warn] 通道 %s 全部失败，尝试下一个通道" % pname, flush=True)
+    raise RuntimeError("所有通道均失败（多为排队/限流），最后错误: %s" % (str(last)[:300],))
 
 
 def fallback(cat):
