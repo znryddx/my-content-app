@@ -135,11 +135,13 @@
   <script src="./isometric.min.js" onerror="document.write('<scr'+'ipt src=&quot;./isometric.js&quot;><\/scr'+'ipt>')"></script>
   <script src="./app.min.js" onerror="document.write('<scr'+'ipt src=&quot;./app.js&quot;><\/scr'+'ipt>')"></script>
 
+
   <script>
-  // 离线兜底：注册 Service Worker，成功打开过一次之后，断网/被重置也能秒开
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('./sw.js').catch(function () {});
+  // 撤回 Service Worker：原方案的网络重置兜底，会在图片资源上错误触发
+  // SVG 占位显示，已反客为主。本机直接走网络，最稳。
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.getRegistrations().then(function (rs) {
+      rs.forEach(function (r) { r.unregister().catch(function () {}); });
     });
   }
   </script>
