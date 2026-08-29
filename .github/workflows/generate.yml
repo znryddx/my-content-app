@@ -40,6 +40,7 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
+          GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FULL_REGEN: ${{ github.event.inputs.full && '1' || '' }}
         run: python .github/scripts/generate.py
 
