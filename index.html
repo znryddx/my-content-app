@@ -134,5 +134,14 @@
 
   <script src="./isometric.min.js" onerror="document.write('<scr'+'ipt src=&quot;./isometric.js&quot;><\/scr'+'ipt>')"></script>
   <script src="./app.min.js" onerror="document.write('<scr'+'ipt src=&quot;./app.js&quot;><\/scr'+'ipt>')"></script>
+
+  <script>
+  // 离线兜底：注册 Service Worker，成功打开过一次之后，断网/被重置也能秒开
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').catch(function () {});
+    });
+  }
+  </script>
 </body>
 </html>
