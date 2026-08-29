@@ -107,10 +107,26 @@
   }
 
   // ---------- 数据 ----------
+  function _fetchOnce(url, ms) {
+    return new Promise(function (resolve) {
+      var settled = false;
+      var t = setTimeout(function () { if (!settled) { settled = true; resolve(null); } }, ms);
+      fetch(url, { cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .then(function (j) { if (!settled) { settled = true; clearTimeout(t); resolve(j); } })
+        .catch(function () { if (!settled) { settled = true; clearTimeout(t); resolve(null); } });
+    });
+  }
   function fetchJSON(url) {
-    return fetch(url, { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
+    return _fetchOnce(url, 12000).then(function (j) {
+      if (j !== null) return j;
+      return new Promise(function (r) { setTimeout(r, 700); })
+        .then(function () { return _fetchOnce(url, 12000); })
+        .then(function (j2) {
+          if (j2 !== null) return j2;
+          return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return _fetchOnce(url, 15000); });
+        });
+    });
   }
   function fetchData(catId, date) { return fetchJSON(DATA + catId + '/' + date + '.json'); }
   function fetchDates(catId) { return fetchJSON(DATA + catId + '/dates.json').then(function (a) { return Array.isArray(a) ? a : []; }); }
@@ -1173,9 +1189,42 @@
   }
 
   // ---------- 启动 ----------
-  fetch('./config.json', { cache: 'no-store' })
-    .then(function (r) { return r.json(); })
+  function showBootError() {
+    var el = document.getElementById('scene');
+    if (!el) return;
+    el.innerHTML = '<div style="padding:60px 22px;text-align:center;font-size:15px;line-height:1.9;">' +
+      '<div style="font-size:16px;margin-bottom:8px;">内容加载失败</div>' +
+      '<div style="font-size:13px;opacity:.6;line-height:1.7;">网络不稳定，或网页暂时无法访问<br>请检查网络后点击重试</div>' +
+      '<button id="bootRetry" style="margin-top:20px;padding:11px 30px;border:none;border-radius:12px;background:#8a6a4a;color:#fff;font-size:15px;">重新加载</button></div>';
+    var b = document.getElementById('bootRetry');
+    if (b) b.addEventListener('click', function () { location.reload(); });
+  }
+  function fetchConfigWithRetry() {
+    var tries = 0;
+    function once() {
+      return new Promise(function (resolve) {
+        var settled = false;
+        var t = setTimeout(function () { if (!settled) { settled = true; resolve(null); } }, 12000);
+        fetch('./config.json', { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(function (j) { if (!settled) { settled = true; clearTimeout(t); resolve(j); } })
+          .catch(function () { if (!settled) { settled = true; clearTimeout(t); resolve(null); } });
+      });
+    }
+    function go() {
+      return once().then(function (j) {
+        if (j !== null) return j;
+        tries++;
+        if (tries < 3) return new Promise(function (r) { setTimeout(r, 900 * tries); }).then(go);
+        showBootError();
+        return null;
+      });
+    }
+    return go();
+  }
+  fetchConfigWithRetry()
     .then(function (c) {
+      if (!c) return;
       cfg = c;
       (cfg.categories || []).forEach(function (cat) { catMap[cat.id] = cat; });
       PLAT = cfg.platforms_module || null;
