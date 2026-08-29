@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  models: read
 
 jobs:
   generate:
@@ -23,6 +24,7 @@ jobs:
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
           LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
           SC_MODEL: ${{ secrets.SC_MODEL || 'google/gemma-4-31b-it:free' }}
+          GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 提交并推送
         run: |
           git config user.name "github-actions[bot]"
