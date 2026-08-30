@@ -1,0 +1,46 @@
+=== 深度诊断 2026-08-30T02:21:22.222Z ===
+
+--- 代理环境变量 ---
+  HTTP_PROXY: 无
+  HTTPS_PROXY: 无
+  http_proxy: 无
+  https_proxy: 无
+  NO_PROXY: 无
+  no_proxy: 无
+
+--- curl 连通性（curl 会走系统代理）---
+  [curl] GitHub Models 根 -> 异常 Command failed: curl -s -o /tmp/_c.out -w "%{http_code}" --max-time 25  'https://models.inference.ai.azure.com/'
+  [curl] OpenRouter models 列表 -> HTTP 200
+
+--- Node 原生 fetch（undici，默认不走代理）---
+
+--- OpenRouter 实时免费模型列表 ---
+  总模型数: 396 / 免费(:free) 数: 18
+  免费模型: inclusionai/ling-3.0-flash-fin:free, dots-studio/dots-3-note-preview:free, liquid/lfm-2.5-2.6b:free, nvidia/nemotron-3.5-lightning:free, thinkingmachines/inkling-small:free, poolside/laguna-s-2.1:free, thinkingmachines/inkling:free, poolside/laguna-xs-2.1:free, cohere/north-mini-code:free, z-ai/glm-5.2:free, nvidia/nemotron-3.5-content-safety:free, nvidia/nemotron-3-ultra-550b-a55b:free, minimax/minimax-m3:free, nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free, google/gemma-4-26b-a4b-it:free, google/gemma-4-31b-it:free, minimax/minimax-m2.7:free, nvidia/nemotron-3-super-120b-a12b:free
+
+--- 免费模型逐个实测 ---
+  [可用] inclusionai/ling-3.0-flash-fin:free (622ms)
+  [可用] dots-studio/dots-3-note-preview:free (723ms)
+  [429] liquid/lfm-2.5-2.6b:free -> Provider returned error
+  [可用] nvidia/nemotron-3.5-lightning:free (467ms)
+  [403] thinkingmachines/inkling-small:free -> thinkingmachines/inkling-small:free is only available on agentic harne
+  [可用] poolside/laguna-s-2.1:free (1731ms)
+  [403] thinkingmachines/inkling:free -> thinkingmachines/inkling:free is only available on agentic harnesses. 
+  [可用] poolside/laguna-xs-2.1:free (1089ms)
+  [可用] cohere/north-mini-code:free (138ms)
+  [429] z-ai/glm-5.2:free -> Provider returned error
+  [可用] nvidia/nemotron-3.5-content-safety:free (175ms)
+  [可用] nvidia/nemotron-3-ultra-550b-a55b:free (2200ms)
+  [可用] minimax/minimax-m3:free (2332ms)
+  [可用] nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free (225ms)
+  [429] google/gemma-4-26b-a4b-it:free -> Provider returned error
+  [429] google/gemma-4-31b-it:free -> Provider returned error
+  [可用] minimax/minimax-m2.7:free (1207ms)
+  [可用] nvidia/nemotron-3-super-120b-a12b:free (351ms)
+
+  可用模型池 = ["inclusionai/ling-3.0-flash-fin:free","dots-studio/dots-3-note-preview:free","nvidia/nemotron-3.5-lightning:free","poolside/laguna-s-2.1:free","poolside/laguna-xs-2.1:free","cohere/north-mini-code:free","nvidia/nemotron-3.5-content-safety:free","nvidia/nemotron-3-ultra-550b-a55b:free","minimax/minimax-m3:free","nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free","minimax/minimax-m2.7:free","nvidia/nemotron-3-super-120b-a12b:free"]
+
+--- GitHub Models ---
+  token 前缀: ghs_1536... 长度 377
+  [fetch] GitHub Models (fetch) -> 异常 fetch failed (12ms)
+  [curl] GitHub Models 异常 Command failed: curl -s -w '\nHTTP=%{http_code}' --max-time 25 https://models.inference.ai.azure.com/chat/completions -H
