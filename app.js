@@ -871,16 +871,30 @@
   }
 
   // ---------- 屏风柜子文案板块（4 分类朋友圈文案，日更/可复制/可标记已读/有历史日期）----------
+  // 金句样式：更大字号 + 更松行距，适合截图转发/做海报文字
+  (function () {
+    try {
+      var st = document.createElement('style');
+      st.textContent =
+        '.sc-quote .content-body{font-size:16.5px;line-height:1.9;letter-spacing:.4px;' +
+        'font-weight:500;color:#7c2d12;padding:14px 16px}' +
+        '.sc-quote{border-left:3px solid #f59e0b}' +
+        '.sc-type.type-quote{background:#fef3c7;color:#b45309}';
+      document.head.appendChild(st);
+    } catch (e) {}
+  })();
+
   var SC_DATA = './data/pingfenguizi/';
   var scState = { dates: [], date: null, data: null, cat: null, filter: 'all', fallback: false };
   var SC_TYPES = [
     { id: 'all', label: '全部' },
     { id: 'short', label: '短句' },
+    { id: 'quote', label: '金句' },
     { id: 'long', label: '长文案' },
     { id: 'vip', label: '高净值客群' },
     { id: 'culture', label: '文化营销' }
   ];
-  var SC_TYPE_LABEL = { short: '短句', long: '长文案', vip: '高净值客群', culture: '文化营销' };
+  var SC_TYPE_LABEL = { short: '短句', quote: '金句', long: '长文案', vip: '高净值客群', culture: '文化营销' };
   function scGlyphSVG() {
     return '<svg viewBox="0 0 48 48" width="46" height="46" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
       '<rect x="8" y="11" width="13" height="26" rx="2"/><rect x="27" y="11" width="13" height="26" rx="2"/>' +
@@ -959,10 +973,17 @@
     var box = $('#scFilter');
     if (!box) return;
     box.innerHTML = '';
-    SC_TYPES.forEach(function (t) {
+    // 只渲染「当前分类实际拥有」的类型 —— 历史日期没有金句时不显示该 chip
+    var cat = findCat(scState.cat);
+    var have = {};
+    if (cat && cat.items) cat.items.forEach(function (i) { have[i.type] = (have[i.type] || 0) + 1; });
+    var list = SC_TYPES.filter(function (t) { return t.id === 'all' || have[t.id]; });
+    // 当前筛选在本次数据中不存在时，回落到「全部」，避免空白页
+    if (scState.filter !== 'all' && !have[scState.filter]) scState.filter = 'all';
+    list.forEach(function (t) {
       var chip = document.createElement('button');
       chip.className = 'sc-filter-chip' + (t.id === scState.filter ? ' active' : '');
-      chip.textContent = t.label;
+      chip.textContent = t.label + (t.id !== 'all' ? ' ' + have[t.id] : '');
       chip.addEventListener('click', function () {
         scState.filter = t.id;
         renderSCFilter();
@@ -988,7 +1009,7 @@
       shown++;
       var rd = scIsRead(scState.date, cat.id, idx);
       var card = document.createElement('div');
-      card.className = 'content-card sc-item' + (rd ? ' read' : '');
+      card.className = 'content-card sc-item' + (type === 'quote' ? ' sc-quote' : '') + (rd ? ' read' : '');
       card.innerHTML =
         '<div class="content-head">' +
           '<div class="content-title sc-idx">#' + (idx + 1) + '</div>' +
