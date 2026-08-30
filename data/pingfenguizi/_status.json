@@ -1,28 +1,4 @@
 {
-  "2026-09-03": {
-    "state": "ai_failed",
-    "msg": "AI 通道全部不可用，已跳过生成，未写入任何内容（避免与历史重复）",
-    "at": "2026-08-30T02:31:42.297Z"
-  },
-  "2026-09-04": {
-    "state": "ai_failed",
-    "msg": "AI 通道全部不可用，已跳过生成，未写入任何内容（避免与历史重复）",
-    "at": "2026-08-30T02:36:55.189Z",
-    "trace": [
-      "[02:36:54] 分类 屏风文案（百宝嵌） 开始请求（prompt 623 字符）",
-      "[02:36:55] 模型发现: 实时免费 16 个，本次尝试 12 个 -> minimax/minimax-m3:free, minimax/minimax-m2.7:free, z-ai/glm-5.2:free, inclusionai/ling-3.0-flash-fin:free ...",
-      "[02:36:55]   请求失败: GH_MODELS is not defined",
-      "[02:36:55] 分类 柜子文案（百宝嵌） 开始请求（prompt 607 字符）",
-      "[02:36:55] 模型发现: 实时免费 16 个，本次尝试 12 个 -> minimax/minimax-m3:free, minimax/minimax-m2.7:free, z-ai/glm-5.2:free, inclusionai/ling-3.0-flash-fin:free ...",
-      "[02:36:55]   请求失败: GH_MODELS is not defined",
-      "[02:36:55] 分类 屏风文案（螺钿） 开始请求（prompt 609 字符）",
-      "[02:36:55] 模型发现: 实时免费 16 个，本次尝试 12 个 -> minimax/minimax-m3:free, minimax/minimax-m2.7:free, z-ai/glm-5.2:free, inclusionai/ling-3.0-flash-fin:free ...",
-      "[02:36:55]   请求失败: GH_MODELS is not defined",
-      "[02:36:55] 分类 柜子文案（螺钿） 开始请求（prompt 605 字符）",
-      "[02:36:55] 模型发现: 实时免费 16 个，本次尝试 12 个 -> minimax/minimax-m3:free, minimax/minimax-m2.7:free, z-ai/glm-5.2:free, inclusionai/ling-3.0-flash-fin:free ...",
-      "[02:36:55]   请求失败: GH_MODELS is not defined"
-    ]
-  },
   "2026-09-05": {
     "state": "ok",
     "msg": "AI 生成成功，全新 96/96 条",
