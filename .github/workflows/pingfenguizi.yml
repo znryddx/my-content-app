@@ -3,6 +3,7 @@ name: 屏风柜子文案 · 每日生成
 on:
   schedule:
     - cron: '30 16 * * *'      # 北京时间 00:30 每日生成
+    - cron: '40 19 * * *'      # 北京时间 03:40 补跑一次（首次失败时兜底）
   workflow_dispatch:
 
 permissions:
@@ -22,13 +23,14 @@ jobs:
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
-          SC_MODEL: ${{ secrets.SC_MODEL || 'google/gemma-4-31b-it:free' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'minimax/minimax-m3:free' }}
+          SC_MODEL: ${{ secrets.SC_MODEL || 'minimax/minimax-m2.7:free' }}
           GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 提交并推送
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/pingfenguizi scripts gen-pingfenguizi.js 2>/dev/null || git add data/pingfenguizi scripts/gen-pingfenguizi.js
-          git commit -m "chore: 屏风柜子文案 $(date +%F)" || echo "no changes"
+          git add data/pingfenguizi
+          git commit -m "chore: 屏风柜子文案 $(date +%F) [bot]" || echo "no changes"
+          git pull --rebase origin main
           git push
