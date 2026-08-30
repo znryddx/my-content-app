@@ -1,0 +1,23 @@
+=== AI 通道诊断 2026-08-30T01:49:56.592Z ===
+
+--- 通道: OpenRouter ---
+  endpoint: https://openrouter.ai/api/v1/chat/completions
+  key 前缀: sk-or-v... 长度 73
+  [google/gemma-4-31b-it:free] HTTP 429 (264ms)
+    响应: {"error":{"message":"Provider returned error","code":429,"metadata":{"raw":"google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations","provider_name":"Google AI Studio","is_b
+  [qwen/qwen3-32b:free] HTTP 404 (33ms)
+    响应: {"error":{"message":"This model is unavailable for free. The paid version is available now - use this slug instead: qwen/qwen3-32b","code":404},"user_id":"user_3HtOs4Zk6BoDZJhlKhGAwOQ3XHk"}
+
+--- 通道: GitHubModels ---
+  endpoint: https://models.inference.ai.azure.com/chat/completions
+  key 前缀: ghs_153... 长度 377
+  [openai/gpt-4.1-mini] 异常: fetch failed (27ms)
+  [openai/gpt-4o-mini] 异常: fetch failed (8ms)
+
+--- 环境变量存在性 ---
+  LLM_API_KEY: 有 (长度73)
+  LLM_BASE_URL: 无
+  LLM_MODEL: 有 (长度26)
+  SC_MODEL: 无
+  GH_MODELS_TOKEN: 有 (长度377)
+  GITHUB_TOKEN: 无
