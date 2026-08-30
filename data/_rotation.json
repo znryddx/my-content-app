@@ -12,13 +12,14 @@
     "incense",
     "incense",
     "burner",
-    "statue"
+    "statue",
+    "agarwood"
   ],
   "today_main": "agarwood",
   "today_angles": [
-    "luodian",
-    "stand",
-    "handpiece"
+    "carving",
+    "jewelrybox",
+    "ruyi"
   ],
-  "date": "2026-08-27"
+  "date": "2026-08-30"
 }
