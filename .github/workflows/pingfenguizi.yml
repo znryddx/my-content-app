@@ -30,11 +30,15 @@ jobs:
           node-version: '20'
       - name: 生成今日文案
         run: |
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            node scripts/gen-pingfenguizi.js "${{ github.event.inputs.date }}"
-          else
-            node scripts/gen-pingfenguizi.js
+          set -e
+          DATE="${{ github.event.inputs.date }}"
+          if [ -z "$DATE" ]; then DATE=$(TZ=Asia/Shanghai date +%F); fi
+          echo "生成日期 = $DATE | force = ${FORCE_REGEN:-0}"
+          if [ "$FORCE_REGEN" = "1" ]; then
+            rm -f "data/pingfenguizi/$DATE.json"
+            echo "已删除旧内容，本次强制重新生成"
           fi
+          node scripts/gen-pingfenguizi.js "$DATE"
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
