@@ -25,10 +25,15 @@ jobs:
           SC_MODEL: ${{ secrets.SC_MODEL }}
           GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 扫描可用模型
+        run: node scripts/scan-models.js
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+
       - name: 提交诊断结果
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/_llm_diag.txt
+          git add data/_llm_diag.txt data/_models_scan.txt
           git commit -m "diag: AI 通道诊断 $(date +%F) [bot]" || echo "no changes"
           git push
