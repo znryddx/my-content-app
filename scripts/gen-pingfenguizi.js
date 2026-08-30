@@ -510,6 +510,16 @@ async function discoverFreeModels() {
   }
 }
 
+// 备用通道模型池：GitHub Models（Actions 内置 GITHUB_TOKEN，零成本）
+// 注：Actions 环境实测该域名不可达（fetch failed / curl 均失败），
+// 保留仅作冗余，失败极快（十几毫秒），不拖慢主链路。
+const GH_MODELS = [
+  'openai/gpt-4.1-mini',
+  'openai/gpt-4o-mini',
+  'meta/Llama-3.3-70B-Instruct',
+  'mistralai/Mistral-Nemo',
+];
+
 async function buildProviders() {
   const list = [];
   const orKey = process.env.LLM_API_KEY;
@@ -525,14 +535,18 @@ async function buildProviders() {
     }
     list.push({ name: 'OpenRouter', url: base + '/chat/completions', key: orKey, models });
   }
-  const ghKey = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
-  if (ghKey) {
-    list.push({
-      name: 'GitHubModels',
-      url: 'https://models.inference.ai.azure.com/chat/completions',
-      key: ghKey,
-      models: GH_MODELS.slice(),
-    });
+  try {
+    const ghKey = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
+    if (ghKey) {
+      list.push({
+        name: 'GitHubModels',
+        url: 'https://models.inference.ai.azure.com/chat/completions',
+        key: ghKey,
+        models: (typeof GH_MODELS !== 'undefined' ? GH_MODELS : []).slice(),
+      });
+    }
+  } catch (e) {
+    T('GitHubModels 通道装配失败（忽略）: ' + e.message);
   }
   return list;
 }
@@ -578,8 +592,14 @@ async function postJSON(url, headers, payload, timeoutMs) {
 }
 
 async function callLLM(prompt) {
-  const providers = await buildProviders();
-  if (!providers.length) return null;
+  let providers = [];
+  try {
+    providers = await buildProviders();
+  } catch (e) {
+    T('buildProviders 异常: ' + e.message);
+    throw e;
+  }
+  if (!providers.length) { T('无可用通道（缺 API Key）'); return null; }
   let lastErr = null;
   for (const p of providers) {
     for (const m of p.models) {
