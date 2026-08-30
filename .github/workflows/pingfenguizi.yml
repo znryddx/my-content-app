@@ -5,6 +5,16 @@ on:
     - cron: '30 16 * * *'      # 北京时间 00:30 每日生成
     - cron: '40 19 * * *'      # 北京时间 03:40 补跑一次（首次失败时兜底）
   workflow_dispatch:
+    inputs:
+      date:
+        description: '指定生成日期（YYYY-MM-DD，留空=今天）'
+        required: false
+        type: string
+      force:
+        description: '强制重生成（覆盖已有内容）'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -19,13 +29,19 @@ jobs:
         with:
           node-version: '20'
       - name: 生成今日文案
-        run: node scripts/gen-pingfenguizi.js
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            node scripts/gen-pingfenguizi.js "${{ github.event.inputs.date }}"
+          else
+            node scripts/gen-pingfenguizi.js
+          fi
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
           LLM_MODEL: ${{ secrets.LLM_MODEL || 'minimax/minimax-m3:free' }}
           SC_MODEL: ${{ secrets.SC_MODEL || 'minimax/minimax-m2.7:free' }}
           GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_REGEN: ${{ github.event.inputs.force && '1' || '' }}
       - name: 提交并推送
         run: |
           git config user.name "github-actions[bot]"
