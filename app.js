@@ -69,6 +69,15 @@
     var m = ('0' + (d.getMonth() + 1)).slice(-2), day = ('0' + d.getDate()).slice(-2);
     return d.getFullYear() + '-' + m + '-' + day;
   }
+  // 优先取今天；今天没有内容则取不晚于今天的最近一天。
+  // 关键：绝不显示未来日期（避免提前生成的排队内容被当成今天展示）
+  function pickDate(dates) {
+    var t = todayStr();
+    if (!dates || !dates.length) return t;
+    if (dates.indexOf(t) >= 0) return t;
+    var past = dates.filter(function (d) { return d <= t; });
+    return past.length ? past[past.length - 1] : dates[0];
+  }
   var WK = ['日', '一', '二', '三', '四', '五', '六'];
   function dateLabel(d) {
     var p = String(d).split('-');
@@ -264,7 +273,7 @@
   function openCategory(catId) {
     currentCat = catId;
     fetchDates(catId).then(function (dates) {
-      var date = (dates && dates.length) ? dates[dates.length - 1] : todayStr();
+      var date = pickDate(dates);
       loadCategory(catId, date);
     });
   }
@@ -438,7 +447,7 @@
     var grid = $('#hubGrid');
     grid.innerHTML = '<div class="hub-loading">加载中…</div>';
     fetchJSON(DATA + 'hub/dates.json').then(function (dates) {
-      var date = (dates && dates.length) ? dates[dates.length - 1] : todayStr();
+      var date = pickDate(dates);
       loadHub(date);
     });
   }
@@ -512,7 +521,7 @@
     var c = $('#dailyContent');
     c.innerHTML = '<div class="content-card"><div class="content-title">加载中…</div></div>';
     fetchJSON(DATA + 'daily/dates.json').then(function (dates) {
-      var date = (dates && dates.length) ? dates[dates.length - 1] : todayStr();
+      var date = pickDate(dates);
       loadDaily(date);
     });
   }
@@ -863,7 +872,7 @@
 
   // ---------- 屏风柜子文案板块（4 分类朋友圈文案，日更/可复制/可标记已读/有历史日期）----------
   var SC_DATA = './data/pingfenguizi/';
-  var scState = { dates: [], date: null, data: null, cat: null, filter: 'all' };
+  var scState = { dates: [], date: null, data: null, cat: null, filter: 'all', fallback: false };
   var SC_TYPES = [
     { id: 'all', label: '全部' },
     { id: 'short', label: '短句' },
@@ -893,11 +902,12 @@
     var b = $('#scBoard');
     $('#scTitle').textContent = '屏风柜子文案';
     b.classList.add('open'); b.setAttribute('aria-hidden', 'false'); b.scrollTop = 0;
-    if (scState.dates.length) { loadScreenCabinet(scState.dates[scState.dates.length - 1]); return; }
+    if (scState.dates.length) { var d0 = pickDate(scState.dates); scState.fallback = (d0 !== todayStr()); loadScreenCabinet(d0); return; }
     fetchJSON(SC_DATA + 'dates.json').then(function (dates) {
       scState.dates = Array.isArray(dates) ? dates : [];
-      var date = scState.dates.length ? scState.dates[scState.dates.length - 1] : todayStr();
-      loadScreenCabinet(date);
+      var d0 = pickDate(scState.dates);
+      scState.fallback = (d0 !== todayStr());
+      loadScreenCabinet(d0);
     });
   }
   function closeScreenCabinet() {
@@ -920,6 +930,15 @@
       renderSCTabs();
       renderSCFilter();
       renderSCItems();
+      if (scState.fallback) {
+        var tip = document.createElement('div');
+        tip.className = 'content-card';
+        tip.innerHTML = '<div class="content-body" style="background:#fff7ed;border:1px solid #fdba74;' +
+          'color:#9a3412;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.6">' +
+          '今日内容正在生成中，下面是 <b>' + dateLabel(date).slice(0, 10) + '</b> 的内容。' +
+          '每天 00:30 自动更新，稍后下拉重进即可看到当天新文案。</div>';
+        c.insertBefore(tip, c.firstChild);
+      }
     });
   }
   function renderSCTabs() {
