@@ -468,6 +468,7 @@ function buildCatPrompt(cat, date) {
     `4. 屏风管「隔断/立屏/山水/聚气」，柜子管「收纳/藏露/镇宅/传家」，不要串味。`,
     `5. 不夸大、不涉医疗、不用绝对化迷信用语；避免陈词滥调，写出有东方美学质感、能直接发朋友圈的句子。`,
     `6. 直接以 { 开头输出 JSON，以 } 结束，中间不要任何说明文字。`,
+    `7. 【关键】text 正文里绝对不要出现英文双引号 " —— 一律用中文引号「」或""代替。否则 JSON 会解析失败，导致整个分类一条都拿不到。也不要出现换行符。`,
   ].join('\n');
 }
 
@@ -662,8 +663,45 @@ function extractJson(text) {
   return JSON.parse(t);
 }
 
+// 三级降级解析：标准 JSON -> 修复后重试 -> 逐条正则提取
+// AI 常在正文里混入英文双引号/换行，导致 JSON.parse 整体失败、该分类 0 条
+function looseItems(text) {
+  const out = [];
+  const re = /\{\s*"type"\s*:\s*"(\w+)"\s*,\s*"text"\s*:\s*"/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const start = m.index + m[0].length;
+    const rest = text.slice(start);
+    const end = rest.search(/"\s*\}/);
+    if (end < 0) continue;
+    let t = rest.slice(0, end);
+    t = t.replace(/\\"/g, '"').replace(/\\n/g, ' ').replace(/\\t/g, ' ').trim();
+    if (t.length >= 5) out.push({ type: m[1], text: t });
+    re.lastIndex = start + end;
+  }
+  return out;
+}
+
 function parseCatItems(text) {
-  const obj = extractJson(text);
+  let obj = null;
+  try {
+    obj = extractJson(text);
+  } catch (e1) {
+    // 二段：把正文里的裸引号替换成中文引号后重试
+    try {
+      let fixed = String(text).replace(/\n/g, ' ');
+      fixed = fixed.replace(/"text"\s*:\s*"/g, '\u0001').replace(/"\s*\}/g, '\u0002');
+      fixed = fixed.replace(/"/g, '\u201c');
+      fixed = fixed.replace(/\u0001/g, '"text":"').replace(/\u0002/g, '"}');
+      obj = extractJson(fixed);
+    } catch (e2) {
+      // 三段：逐条正则提取，能救回多少算多少
+      const loose = looseItems(String(text));
+      T('  标准解析失败，改用逐条提取，救回 ' + loose.length + ' 条');
+      if (!loose.length) throw new Error('JSON 解析失败且无法降级提取: ' + e1.message);
+      obj = { items: loose };
+    }
+  }
   let items = null;
   if (obj && Array.isArray(obj.items)) items = obj.items;
   else if (obj && Array.isArray(obj.cats) && obj.cats[0] && Array.isArray(obj.cats[0].items)) items = obj.cats[0].items;
