@@ -1,0 +1,30 @@
+=== OpenRouter 免费模型可用性扫描 2026-08-30T01:55:28.049Z ===
+key 前缀: sk-or-v...
+
+[限流] google/gemma-4-31b-it:free (182ms) 错误: Provider returned error
+[失效] google/gemma-3-27b-it:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] google/gemma-3-12b-it:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] meta-llama/llama-3.3-70b-instruct:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] meta-llama/llama-3.2-3b-instruct:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] meta-llama/llama-3.1-8b-instruct:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] deepseek/deepseek-r1-distill-llama-70b:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] deepseek/deepseek-chat-v3-0324:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] qwen/qwen2.5-vl-72b-instruct:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] qwen/qwen3-14b:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] mistralai/mistral-nemo:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] mistralai/mistral-small-3.1-24b-instruct:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] microsoft/phi-4-reasoning:free HTTP404 错误: No endpoints found for microsoft/phi-4-reasoning:free.
+[失效] microsoft/phi-3-mini-128k-instruct:free HTTP404 错误: No endpoints found for microsoft/phi-3-mini-128k-instruct:free.
+[失效] nvidia/nemotron-3-nano-30b-a3b:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] openai/gpt-oss-20b:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] thudm/glm-4-9b:free HTTP404 错误: No endpoints found for thudm/glm-4-9b:free.
+[失效] z-ai/glm-4.5-air:free HTTP404 错误: This model is unavailable for free. The paid version is available now - use this slug inst
+[失效] moonshotai/kimi-vl-a3b-thinking:free HTTP404 错误: No endpoints found for moonshotai/kimi-vl-a3b-thinking:free.
+[失效] tng/deepseek-r1t2-chimera:free HTTP400 错误: tng/deepseek-r1t2-chimera:free is not a valid model ID
+
+========== 汇总 ==========
+可用 (0): 无
+限流 (1): google/gemma-4-31b-it:free
+失效 (19): google/gemma-3-27b-it:free, google/gemma-3-12b-it:free, meta-llama/llama-3.3-70b-instruct:free, meta-llama/llama-3.2-3b-instruct:free, meta-llama/llama-3.1-8b-instruct:free, deepseek/deepseek-r1-distill-llama-70b:free, deepseek/deepseek-chat-v3-0324:free, qwen/qwen2.5-vl-72b-instruct:free, qwen/qwen3-14b:free, mistralai/mistral-nemo:free, mistralai/mistral-small-3.1-24b-instruct:free, microsoft/phi-4-reasoning:free, microsoft/phi-3-mini-128k-instruct:free, nvidia/nemotron-3-nano-30b-a3b:free, openai/gpt-oss-20b:free, thudm/glm-4-9b:free, z-ai/glm-4.5-air:free, moonshotai/kimi-vl-a3b-thinking:free, tng/deepseek-r1t2-chimera:free
+
+建议模型池 = ["google/gemma-4-31b-it:free"]
