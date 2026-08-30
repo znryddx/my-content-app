@@ -502,10 +502,10 @@ async function discoverFreeModels() {
     const ordered = OR_PREFERRED.filter((m) => live.indexOf(m) >= 0);
     const rest = live.filter((m) => ordered.indexOf(m) < 0);
     const all = ordered.concat(rest).slice(0, OR_MAX_TRY);
-    console.log('[模型] 实时发现免费模型 ' + live.length + ' 个，本次将尝试 ' + all.length + ' 个');
+    T('模型发现: 实时免费 ' + live.length + ' 个，本次尝试 ' + all.length + ' 个 -> ' + all.slice(0, 4).join(', ') + ' ...');
     return all;
   } catch (e) {
-    console.warn('[模型] 实时发现失败（' + e.message + '），回退静态优选列表');
+    T('模型发现失败: ' + e.message + '，回退静态列表');
     return OR_PREFERRED.slice(0, OR_MAX_TRY);
   }
 }
@@ -539,6 +539,10 @@ async function buildProviders() {
 
 // ---------- 网络层：fetch 优先，失败回退 curl（undici 不读系统代理，curl 读） ----------
 const { execFileSync } = require('child_process');
+
+// 全程追踪：每一步都记下来，出错时落盘到 _status.json，便于远程定位
+const TRACE = [];
+const T = (s) => { TRACE.push('[' + new Date().toISOString().slice(11, 19) + '] ' + s); console.log('  ' + s); };
 
 async function postJSON(url, headers, payload, timeoutMs) {
   try {
@@ -592,17 +596,27 @@ async function callLLM(prompt) {
         }, 100000);
         if (res.ok) break;
         if (res.status !== 429 && res.status !== 502 && res.status !== 503) break;
+        T('  重试 ' + (ti + 1) + '/' + tries.length + ' ' + m + ' HTTP ' + res.status);
       }
       try {
         if (!res.ok) {
-          lastErr = p.name + '/' + m + ' HTTP ' + res.status + ' [' + res.via + '] ' + String(res.text || '').slice(0, 120);
+          lastErr = p.name + '/' + m + ' HTTP ' + res.status + ' [' + res.via + '] ' + String(res.text || '').slice(0, 150);
+          T('  ' + m + ' -> HTTP ' + res.status + ' [' + res.via + '] ' + String(res.text || '').slice(0, 150));
           continue;
         }
         let j = null;
-        try { j = JSON.parse(res.text); } catch (pe) { lastErr = p.name + '/' + m + ' 解析失败'; continue; }
+        try { j = JSON.parse(res.text); } catch (pe) {
+          lastErr = p.name + '/' + m + ' 解析失败';
+          T('  ' + m + ' -> HTTP 200 但 JSON 解析失败，原文前 300 字: ' + String(res.text || '').slice(0, 300));
+          continue;
+        }
         const c = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
-        if (!c) { lastErr = p.name + '/' + m + ' 空内容'; continue; }
-        console.log('    [ok] ' + p.name + ' · ' + m);
+        if (!c) {
+          lastErr = p.name + '/' + m + ' 空内容';
+          T('  ' + m + ' -> HTTP 200 但无 choices，原文: ' + String(res.text || '').slice(0, 200));
+          continue;
+        }
+        T('  [命中] ' + m + ' 返回 ' + c.length + ' 字符');
         return c;
       } catch (e) {
         lastErr = p.name + '/' + m + ' ' + e.message;
@@ -690,12 +704,14 @@ function loadHistory(date) {
 }
 
 // ---------- 状态文件（AI 失败时告知前端，而不是静默吐旧内容） ----------
-function writeStatus(date, state, msg) {
+function writeStatus(date, state, msg, keepTrace) {
   if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
   const fp = path.join(OUT_DIR, '_status.json');
   let obj = {};
   try { obj = JSON.parse(fs.readFileSync(fp, 'utf8')); } catch (e) { obj = {}; }
-  obj[date] = { state: state, msg: msg, at: new Date().toISOString() };
+  const rec = { state: state, msg: msg, at: new Date().toISOString() };
+  if (keepTrace) rec.trace = TRACE.slice(-120);   // 保留最后 120 行追踪
+  obj[date] = rec;
   fs.writeFileSync(fp, JSON.stringify(obj, null, 2), 'utf8');
 }
 
@@ -760,13 +776,22 @@ function fileExistsGood(date) {
     let items = [];
     let from = '未生成';
     try {
+      const plen = buildCatPrompt(c, date).length;
+      T('分类 ' + c.label + ' 开始请求（prompt ' + plen + ' 字符）');
       const txt = await callLLM(buildCatPrompt(c, date));
       if (txt) {
-        items = parseCatItems(txt);
-        if (items.length > 0) { from = 'AI 生成 ' + items.length + ' 条'; aiHits++; }
+        try {
+          items = parseCatItems(txt);
+          T('  解析出 ' + items.length + ' 条（返回原文 ' + txt.length + ' 字符）');
+          if (items.length > 0) { from = 'AI 生成 ' + items.length + ' 条'; aiHits++; }
+        } catch (pe) {
+          T('  解析异常: ' + pe.message + ' | 原文尾部 300 字: ' + String(txt).slice(-300));
+        }
+      } else {
+        T('  无返回内容');
       }
     } catch (e) {
-      console.warn('    [warn] ' + c.label + ' 失败: ' + e.message);
+      T('  请求失败: ' + e.message.slice(0, 200));
     }
     const before = items.length;
     const merged = fillUp(items, FALLBACK_FULL[c.id] || [], banned);
@@ -791,17 +816,18 @@ function fileExistsGood(date) {
       ? 'AI 通道全部不可用，已跳过生成，未写入任何内容（避免与历史重复）'
       : 'AI 返回内容全部与历史重复，已拒绝写入';
     console.error('[拒绝写入] ' + date + ' — ' + msg);
-    writeStatus(date, 'ai_failed', msg);
-    console.log('[状态] 已写入 _status.json，前端将显示「今日内容生成中」');
+    writeStatus(date, 'ai_failed', msg, true);
+    console.log('[状态] 已写入 _status.json（含 ' + TRACE.length + ' 行追踪）');
     return;
   }
   if (totalNew < 40) {
     console.error('[拒绝写入] ' + date + ' — 全新内容仅 ' + totalNew + ' 条（<40），判定为复读，不写入');
-    writeStatus(date, 'ai_failed', '生成内容新鲜度不足（' + totalNew + ' 条），已跳过');
+    writeStatus(date, 'ai_failed', '生成内容新鲜度不足（' + totalNew + ' 条），已跳过', true);
     return;
   }
 
   writeData(date, { date, cats });
+  writeStatus(date, 'ok', 'AI 生成成功，全新 ' + totalNew + '/' + total + ' 条', true);
   console.log('[完成] 分类 =', cats.length, '| 文案合计 =', total,
     '| 全新 =', totalNew, '| AI 命中分类 =', aiHits + '/4');
   console.log('[输出]', path.join(OUT_DIR, date + '.json'));
