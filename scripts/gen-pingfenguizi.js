@@ -467,29 +467,62 @@ function buildCatPrompt(cat, date) {
 }
 
 // ---------- AI 通道 ----------
-const OR_MODELS = [
+// 优选顺序：按中文文创文案质量排序（实测可用者在前）
+const OR_PREFERRED = [
+  'minimax/minimax-m3:free',
+  'minimax/minimax-m2.7:free',
+  'z-ai/glm-5.2:free',
+  'inclusionai/ling-3.0-flash-fin:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  'dots-studio/dots-3-note-preview:free',
+  'poolside/laguna-s-2.1:free',
+  'poolside/laguna-xs-2.1:free',
+  'nvidia/nemotron-3.5-lightning:free',
+  'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
   'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
-  'qwen/qwen3-32b:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
-  'microsoft/phi-3-mini-128k-instruct:free',
 ];
-const GH_MODELS = [
-  'openai/gpt-4.1-mini',
-  'openai/gpt-4o-mini',
-  'meta/Llama-3.3-70B-Instruct',
-  'mistralai/Mistral-Nemo',
+// 不适合创意文案的模型（内容安全 / 纯代码）
+const OR_BLOCKED = [
+  'nvidia/nemotron-3.5-content-safety:free',
+  'cohere/north-mini-code:free',
 ];
+const OR_MAX_TRY = 12;   // 单次生成最多尝试模型数，避免全部试一遍太慢
 
-function buildProviders() {
+// 动态拉取 OpenRouter 当前免费模型（模型会上下架，硬编码必然过期）
+async function discoverFreeModels() {
+  try {
+    const r = await fetch('https://openrouter.ai/api/v1/models');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    const live = (j.data || []).map((m) => m.id)
+      .filter((id) => id.endsWith(':free') && OR_BLOCKED.indexOf(id) < 0);
+    if (!live.length) throw new Error('无免费模型');
+    const ordered = OR_PREFERRED.filter((m) => live.indexOf(m) >= 0);
+    const rest = live.filter((m) => ordered.indexOf(m) < 0);
+    const all = ordered.concat(rest).slice(0, OR_MAX_TRY);
+    console.log('[模型] 实时发现免费模型 ' + live.length + ' 个，本次将尝试 ' + all.length + ' 个');
+    return all;
+  } catch (e) {
+    console.warn('[模型] 实时发现失败（' + e.message + '），回退静态优选列表');
+    return OR_PREFERRED.slice(0, OR_MAX_TRY);
+  }
+}
+
+async function buildProviders() {
   const list = [];
   const orKey = process.env.LLM_API_KEY;
   if (orKey) {
     const base = (process.env.LLM_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, '');
-    const models = [];
+    const models = await discoverFreeModels();
     const primary = process.env.LLM_MODEL || process.env.SC_MODEL;
-    if (primary && !models.includes(primary)) models.push(primary);
-    OR_MODELS.forEach((m) => { if (!models.includes(m)) models.push(m); });
+    // 环境变量指定的模型排最前，但不重复
+    if (primary) {
+      const i = models.indexOf(primary);
+      if (i > 0) models.splice(i, 1);
+      if (models[0] !== primary) models.unshift(primary);
+    }
     list.push({ name: 'OpenRouter', url: base + '/chat/completions', key: orKey, models });
   }
   const ghKey = process.env.GH_MODELS_TOKEN || process.env.GITHUB_TOKEN;
@@ -541,18 +574,26 @@ async function postJSON(url, headers, payload, timeoutMs) {
 }
 
 async function callLLM(prompt) {
-  const providers = buildProviders();
+  const providers = await buildProviders();
   if (!providers.length) return null;
   let lastErr = null;
   for (const p of providers) {
     for (const m of p.models) {
-      try {
-        const res = await postJSON(p.url, { Authorization: 'Bearer ' + p.key }, {
+      // 429 = 上游临时限流，重试 2 次（间隔 3s / 6s）往往能过
+      const tries = [0, 3000, 6000];
+      let res = null;
+      for (let ti = 0; ti < tries.length; ti++) {
+        if (tries[ti] > 0) await new Promise((s2) => setTimeout(s2, tries[ti]));
+        res = await postJSON(p.url, { Authorization: 'Bearer ' + p.key }, {
           model: m,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.9,
           max_tokens: 8000,
         }, 100000);
+        if (res.ok) break;
+        if (res.status !== 429 && res.status !== 502 && res.status !== 503) break;
+      }
+      try {
         if (!res.ok) {
           lastErr = p.name + '/' + m + ' HTTP ' + res.status + ' [' + res.via + '] ' + String(res.text || '').slice(0, 120);
           continue;
