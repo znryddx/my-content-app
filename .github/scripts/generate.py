@@ -36,20 +36,63 @@ CELLS = cfg.get("cells", [])
 ANGLE_POOL = {a["id"]: a for a in cfg.get("rotation", {}).get("angle_pool", [])}
 DATE = datetime.date.today().isoformat()
 
-PRIMARY_MODEL = os.environ.get("LLM_MODEL", "google/gemma-4-31b-it:free")
-# 免费档单模型偶发排队/卡死（如 gemma-4-31b 高峰期长时间无响应），
-# 故按优先级尝试多个 :free 模型，任一可用即采用，显著提升每日生成成功率。
-# 模型池越大，A 链路命中可用模型的概率越高，B 兜底越不需要启动。
-MODELS = [PRIMARY_MODEL,
-          "google/gemma-4-26b-a4b-it:free",
-          "nvidia/nemotron-3-nano-30b-a3b:free",
-          "openai/gpt-oss-20b:free",
-          "qwen/qwen3-32b:free",
-          "meta/llama-3.1-8b-instruct:free",
-          "deepseek/deepseek-r1-distill-llama-70b:free",
-          "thudm/glm-4-9b:free"]
+PRIMARY_MODEL = os.environ.get("LLM_MODEL", "minimax/minimax-m3:free")
+
+# OpenRouter 的免费模型会频繁上下架，硬编码列表必然过期（2026-08 实测：
+# 原 8 个模型 7 个返回 404「unavailable for free」，1 个 429 限流，
+# 导致整条日更链路长期静默走兜底、内容每天重复）。
+# 因此改为：启动时实时拉取当前 :free 模型，按中文文案质量优选排序后逐个尝试。
+OR_PREFERRED = [
+    "minimax/minimax-m3:free",            # 中文表达最好，首选
+    "minimax/minimax-m2.7:free",
+    "z-ai/glm-5.2:free",
+    "inclusionai/ling-3.0-flash-fin:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "dots-studio/dots-3-note-preview:free",
+    "poolside/laguna-s-2.1:free",
+    "poolside/laguna-xs-2.1:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+]
+OR_BLOCKED = [                             # 不适合创意文案（内容安全 / 纯代码）
+    "nvidia/nemotron-3.5-content-safety:free",
+    "cohere/north-mini-code:free",
+]
+OR_MAX_TRY = 12
+
+
+def discover_free_models():
+    """实时拉取 OpenRouter 当前免费模型；失败则回退静态优选列表。"""
+    try:
+        import urllib.request
+        req = urllib.request.Request("https://openrouter.ai/api/v1/models",
+                                     headers={"User-Agent": "daily-gen"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        live = [m.get("id", "") for m in data.get("data", [])]
+        live = [i for i in live if i.endswith(":free") and i not in OR_BLOCKED]
+        if not live:
+            raise RuntimeError("无免费模型")
+        ordered = [m for m in OR_PREFERRED if m in live]
+        rest = [m for m in live if m not in ordered]
+        allm = (ordered + rest)[:OR_MAX_TRY]
+        print("[info] 实时发现免费模型 %d 个，本次尝试 %d 个" % (len(live), len(allm)), flush=True)
+        return allm
+    except Exception as e:
+        print("[warn] 实时发现失败（%s），回退静态优选列表" % (e,), flush=True)
+        return OR_PREFERRED[:OR_MAX_TRY]
+
+
+MODELS = discover_free_models()
+if PRIMARY_MODEL:
+    if PRIMARY_MODEL in MODELS:
+        MODELS.remove(PRIMARY_MODEL)
+    MODELS.insert(0, PRIMARY_MODEL)
 # 逐次退避基数（秒），叠加随机抖动避免多模型同时重试被集体限流
-BACKOFF = [15, 30, 60]
+BACKOFF = [3, 6, 12]
 # —— 备用通道：GitHub Models（Actions 内置 GITHUB_TOKEN，零成本零配置）——
 # OpenRouter 免费档高峰期会长时间排队/限流，此时切换到 GitHub Models 保底，
 # 避免整条日更链路因为单一供应商抖动而中断。
