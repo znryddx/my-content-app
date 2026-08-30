@@ -504,6 +504,42 @@ function buildProviders() {
   return list;
 }
 
+// ---------- 网络层：fetch 优先，失败回退 curl（undici 不读系统代理，curl 读） ----------
+const { execFileSync } = require('child_process');
+
+async function postJSON(url, headers, payload, timeoutMs) {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs || 100000);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    const text = await res.text();
+    return { ok: res.ok, status: res.status, text: text, via: 'fetch' };
+  } catch (e) {
+    try {
+      const args = ['-s', '-w', '\n__HTTP__%{http_code}', '--max-time',
+        String(Math.ceil((timeoutMs || 100000) / 1000)), url];
+      for (const k in headers) args.push('-H', k + ': ' + headers[k]);
+      args.push('-H', 'Content-Type: application/json');
+      args.push('--data-binary', '@-');
+      const out = execFileSync('curl', args, {
+        input: JSON.stringify(payload), encoding: 'utf-8', maxBuffer: 32 * 1024 * 1024,
+      });
+      const m = out.match(/\n__HTTP__(\d+)\s*$/);
+      const status = m ? parseInt(m[1], 10) : 0;
+      const text = m ? out.slice(0, m.index) : out;
+      return { ok: status >= 200 && status < 300, status: status, text: text, via: 'curl' };
+    } catch (e2) {
+      return { ok: false, status: 0, text: '', via: 'fail', err: e.message + ' | curl:' + e2.message };
+    }
+  }
+}
+
 async function callLLM(prompt) {
   const providers = buildProviders();
   if (!providers.length) return null;
@@ -511,25 +547,18 @@ async function callLLM(prompt) {
   for (const p of providers) {
     for (const m of p.models) {
       try {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 100000);
-        const res = await fetch(p.url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + p.key },
-          body: JSON.stringify({
-            model: m,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.9,
-            max_tokens: 8000,
-          }),
-          signal: ctrl.signal,
-        });
-        clearTimeout(timer);
+        const res = await postJSON(p.url, { Authorization: 'Bearer ' + p.key }, {
+          model: m,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.9,
+          max_tokens: 8000,
+        }, 100000);
         if (!res.ok) {
-          lastErr = p.name + '/' + m + ' HTTP ' + res.status;
+          lastErr = p.name + '/' + m + ' HTTP ' + res.status + ' [' + res.via + '] ' + String(res.text || '').slice(0, 120);
           continue;
         }
-        const j = await res.json();
+        let j = null;
+        try { j = JSON.parse(res.text); } catch (pe) { lastErr = p.name + '/' + m + ' 解析失败'; continue; }
         const c = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
         if (!c) { lastErr = p.name + '/' + m + ' 空内容'; continue; }
         console.log('    [ok] ' + p.name + ' · ' + m);
@@ -566,7 +595,9 @@ function parseCatItems(text) {
 }
 
 // ---------- 按类型智能补足到每类 24 条 ----------
-function fillUp(items, fb) {
+// banned = 历史已用文案集合（含当天其它分类已用），兜底内容也必须避开
+function fillUp(items, fb, banned) {
+  const ban = banned || new Set();
   const out = [];
   const seen = new Set();
   const countOf = (t) => out.filter((o) => o.type === t).length;
@@ -574,6 +605,7 @@ function fillUp(items, fb) {
   for (const t of TYPES) {
     for (const it of items) {
       if (it.type !== t || seen.has(it.text)) continue;
+      if (ban.has(it.text)) continue;          // 与历史撞车 -> 丢弃
       if (countOf(t) >= PER_TYPE) break;
       seen.add(it.text);
       out.push(it);
@@ -585,6 +617,7 @@ function fillUp(items, fb) {
     for (const f of fb) {
       if (need <= 0) break;
       if (f.type !== t || seen.has(f.text)) continue;
+      if (ban.has(f.text)) continue;            // 兜底同样不许复用历史
       seen.add(f.text);
       out.push(f);
       need--;
@@ -594,6 +627,35 @@ function fillUp(items, fb) {
   const ordered = [];
   for (const t of TYPES) out.filter((o) => o.type === t).forEach((o) => ordered.push(o));
   return ordered;
+}
+
+// ---------- 历史文案黑名单 ----------
+function loadHistory(date) {
+  const ban = new Set();
+  if (!fs.existsSync(OUT_DIR)) return ban;
+  let n = 0;
+  for (const f of fs.readdirSync(OUT_DIR)) {
+    if (!/^\d{4}-\d{2}-\d{2}\.json$/.test(f)) continue;
+    if (f === date + '.json') continue;
+    try {
+      const d = JSON.parse(fs.readFileSync(path.join(OUT_DIR, f), 'utf8'));
+      for (const c of (d.cats || [])) for (const it of (c.items || [])) {
+        if (it && it.text) { ban.add(String(it.text).trim()); n++; }
+      }
+    } catch (e) { /* 忽略坏文件 */ }
+  }
+  console.log('[历史] 已加载 ' + ban.size + ' 条历史文案（累计 ' + n + ' 条次），当天内容必须全部避开');
+  return ban;
+}
+
+// ---------- 状态文件（AI 失败时告知前端，而不是静默吐旧内容） ----------
+function writeStatus(date, state, msg) {
+  if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
+  const fp = path.join(OUT_DIR, '_status.json');
+  let obj = {};
+  try { obj = JSON.parse(fs.readFileSync(fp, 'utf8')); } catch (e) { obj = {}; }
+  obj[date] = { state: state, msg: msg, at: new Date().toISOString() };
+  fs.writeFileSync(fp, JSON.stringify(obj, null, 2), 'utf8');
 }
 
 // ---------- 输出 ----------
@@ -626,11 +688,36 @@ function fileExistsGood(date) {
   }
   console.log('[生成] 日期 =', date);
 
+  // ---- 0. 预置队列优先：人工/离线准备好的内容，质量最高，直接用 ----
+  const qDir = path.join(OUT_DIR, '_queue');
+  const qFile = path.join(qDir, date + '.json');
+  if (fs.existsSync(qFile)) {
+    try {
+      const q = JSON.parse(fs.readFileSync(qFile, 'utf8'));
+      if (Array.isArray(q.cats) && q.cats.length === 4
+        && q.cats.every((c) => Array.isArray(c.items) && c.items.length >= 20)) {
+        q.date = date;
+        writeData(date, q);
+        fs.unlinkSync(qFile);
+        const tot = q.cats.reduce((s2, c) => s2 + c.items.length, 0);
+        console.log('[队列] 命中预置内容 ' + date + '，共 ' + tot + ' 条，已发布并出队');
+        return;
+      }
+      console.warn('[队列] ' + date + '.json 结构不完整，忽略，改用 AI');
+    } catch (e) {
+      console.warn('[队列] 读取失败: ' + e.message);
+    }
+  }
+
+  // ---- 1. 载入历史黑名单 ----
+  const banned = loadHistory(date);
+
+  // ---- 2. AI 逐分类生成 ----
   const cats = [];
   let aiHits = 0;
   for (const c of CATS) {
     let items = [];
-    let from = '兜底模板';
+    let from = '未生成';
     try {
       const txt = await callLLM(buildCatPrompt(c, date));
       if (txt) {
@@ -640,14 +727,41 @@ function fileExistsGood(date) {
     } catch (e) {
       console.warn('    [warn] ' + c.label + ' 失败: ' + e.message);
     }
-    const merged = fillUp(items, FALLBACK_FULL[c.id] || []);
+    const before = items.length;
+    const merged = fillUp(items, FALLBACK_FULL[c.id] || [], banned);
+    // 统计有多少条是被历史黑名单挡掉的
+    const blocked = before - merged.filter((m) => items.some((i2) => i2.text === m.text)).length;
+    if (blocked > 0) console.warn('    [去重] ' + c.label + ' 剔除 ' + blocked + ' 条与历史重复');
     cats.push({ id: c.id, label: c.label, items: merged });
     console.log('  · ' + c.label + ' -> ' + merged.length + ' 条（' + from + '）');
   }
 
-  const data = { date, cats };
-  writeData(date, data);
-  const total = cats.reduce((s, c) => s + c.items.length, 0);
-  console.log('[完成] 分类 =', cats.length, '| 文案合计 =', total, '| AI 命中分类 =', aiHits + '/4');
+  const totalNew = cats.reduce((s2, c) => s2 + c.items.filter(
+    (i2) => !banned.has(i2.text)).length, 0);
+  const total = cats.reduce((s2, c) => s2 + c.items.length, 0);
+
+  // ---- 3. 质量闸门：AI 全挂 / 全部是历史复读 -> 拒绝写入 ----
+  const allFromFallback = cats.every((c) => c.items.every((i2) => {
+    const fb = FALLBACK_FULL[c.id] || [];
+    return fb.some((f) => f.text === i2.text);
+  }));
+  if (aiHits === 0 || allFromFallback) {
+    const msg = aiHits === 0
+      ? 'AI 通道全部不可用，已跳过生成，未写入任何内容（避免与历史重复）'
+      : 'AI 返回内容全部与历史重复，已拒绝写入';
+    console.error('[拒绝写入] ' + date + ' — ' + msg);
+    writeStatus(date, 'ai_failed', msg);
+    console.log('[状态] 已写入 _status.json，前端将显示「今日内容生成中」');
+    return;
+  }
+  if (totalNew < 40) {
+    console.error('[拒绝写入] ' + date + ' — 全新内容仅 ' + totalNew + ' 条（<40），判定为复读，不写入');
+    writeStatus(date, 'ai_failed', '生成内容新鲜度不足（' + totalNew + ' 条），已跳过');
+    return;
+  }
+
+  writeData(date, { date, cats });
+  console.log('[完成] 分类 =', cats.length, '| 文案合计 =', total,
+    '| 全新 =', totalNew, '| AI 命中分类 =', aiHits + '/4');
   console.log('[输出]', path.join(OUT_DIR, date + '.json'));
 })();
