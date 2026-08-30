@@ -469,6 +469,7 @@ function buildCatPrompt(cat, date) {
     `5. 不夸大、不涉医疗、不用绝对化迷信用语；避免陈词滥调，写出有东方美学质感、能直接发朋友圈的句子。`,
     `6. 直接以 { 开头输出 JSON，以 } 结束，中间不要任何说明文字。`,
     `7. 【关键】text 正文里绝对不要出现英文双引号 " —— 一律用中文引号「」或""代替。否则 JSON 会解析失败，导致整个分类一条都拿不到。也不要出现换行符。`,
+    `8. 【长度硬要求】long 每条必须 120~220 字；vip 每条 60~120 字；culture 每条 60~120 字；short 每条 12~30 字；quote 每条 18~45 字。不许用短句充数，长度不达标视为作废。`,
   ].join('\n');
 }
 
@@ -832,37 +833,47 @@ function fileExistsGood(date) {
   // ---- 1. 载入历史黑名单 ----
   const banned = loadHistory(date);
 
-  // ---- 2. AI 逐分类生成 ----
+  // ---- 2. AI 逐分类生成（每个分类最多 3 次，取条数最多的一次） ----
+  async function genCat(c) {
+    let best = [];
+    let bestFrom = '未生成';
+    for (let att = 0; att < 3; att++) {
+      let items = [];
+      try {
+        T('分类 ' + c.label + ' 第 ' + (att + 1) + ' 次请求');
+        const txt = await callLLM(buildCatPrompt(c, date));
+        if (txt) {
+          try {
+            items = parseCatItems(txt);
+            T('  解析出 ' + items.length + ' 条（原文 ' + txt.length + ' 字符）');
+          } catch (pe) {
+            T('  解析失败: ' + pe.message.slice(0, 120));
+          }
+        }
+      } catch (e) {
+        T('  请求失败: ' + e.message.slice(0, 120));
+      }
+      const merged = fillUp(items, FALLBACK_FULL[c.id] || [], banned);
+      T('  本次可用 ' + merged.length + ' 条（目标 ' + TARGET + '）');
+      if (merged.length > best.length) { best = merged; bestFrom = 'AI ' + merged.length + ' 条'; }
+      if (best.length >= TARGET) break;
+      if (att < 2) {
+        T('  数量不足，5 秒后重试（换模型）');
+        await new Promise((s2) => setTimeout(s2, 5000));
+      }
+    }
+    return { items: best, from: bestFrom };
+  }
+
   const cats = [];
   let aiHits = 0;
   for (const c of CATS) {
-    let items = [];
-    let from = '未生成';
-    try {
-      const plen = buildCatPrompt(c, date).length;
-      T('分类 ' + c.label + ' 开始请求（prompt ' + plen + ' 字符）');
-      const txt = await callLLM(buildCatPrompt(c, date));
-      if (txt) {
-        try {
-          items = parseCatItems(txt);
-          T('  解析出 ' + items.length + ' 条（返回原文 ' + txt.length + ' 字符）');
-          if (items.length > 0) { from = 'AI 生成 ' + items.length + ' 条'; aiHits++; }
-        } catch (pe) {
-          T('  解析异常: ' + pe.message + ' | 原文尾部 300 字: ' + String(txt).slice(-300));
-        }
-      } else {
-        T('  无返回内容');
-      }
-    } catch (e) {
-      T('  请求失败: ' + e.message.slice(0, 200));
-    }
-    const before = items.length;
-    const merged = fillUp(items, FALLBACK_FULL[c.id] || [], banned);
-    // 统计有多少条是被历史黑名单挡掉的
-    const blocked = before - merged.filter((m) => items.some((i2) => i2.text === m.text)).length;
-    if (blocked > 0) console.warn('    [去重] ' + c.label + ' 剔除 ' + blocked + ' 条与历史重复');
+    const r = await genCat(c);
+    const merged = r.items;
+    if (merged.length >= TARGET * 0.9) aiHits++;
+    else T('  [警告] ' + c.label + ' 最终仅 ' + merged.length + ' 条，未达目标 ' + TARGET);
     cats.push({ id: c.id, label: c.label, items: merged });
-    console.log('  · ' + c.label + ' -> ' + merged.length + ' 条（' + from + '）');
+    console.log('  · ' + c.label + ' -> ' + merged.length + ' 条（' + r.from + '）');
   }
 
   const totalNew = cats.reduce((s2, c) => s2 + c.items.filter(
