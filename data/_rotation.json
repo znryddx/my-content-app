@@ -1,7 +1,5 @@
 {
   "history": [
-    "burner",
-    "statue",
     "agarwood",
     "inlay",
     "teaware",
@@ -14,13 +12,14 @@
     "agarwood",
     "inlay",
     "teaware",
-    "teaware"
+    "teaware",
+    "gift"
   ],
   "today_main": "gift",
   "today_angles": [
-    "screen",
-    "wenfang",
-    "qizuo"
+    "ruyi",
+    "jewelrybox",
+    "furniture"
   ],
   "date": "2026-08-31"
 }
