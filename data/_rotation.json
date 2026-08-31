@@ -13,13 +13,14 @@
     "statue",
     "agarwood",
     "inlay",
+    "teaware",
     "teaware"
   ],
-  "today_main": "teaware",
+  "today_main": "gift",
   "today_angles": [
-    "carving",
-    "jewelrybox",
-    "ruyi"
+    "screen",
+    "wenfang",
+    "qizuo"
   ],
-  "date": "2026-08-30"
+  "date": "2026-08-31"
 }
