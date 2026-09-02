@@ -1,7 +1,6 @@
 {
   "history": [
     "incense",
-    "incense",
     "burner",
     "statue",
     "agarwood",
@@ -13,9 +12,10 @@
     "incense",
     "burner",
     "statue",
-    "agarwood"
+    "agarwood",
+    "inlay"
   ],
-  "today_main": "agarwood",
+  "today_main": "inlay",
   "today_angles": [
     "stand",
     "ruyi",
