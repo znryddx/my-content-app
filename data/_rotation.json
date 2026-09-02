@@ -1,6 +1,5 @@
 {
   "history": [
-    "bracelet",
     "incense",
     "incense",
     "burner",
@@ -13,11 +12,12 @@
     "bracelet",
     "incense",
     "burner",
-    "statue"
+    "statue",
+    "agarwood"
   ],
   "today_main": "agarwood",
   "today_angles": [
-    "wenfang",
+    "stand",
     "ruyi",
     "carving"
   ],
