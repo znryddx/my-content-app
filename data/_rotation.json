@@ -1,6 +1,5 @@
 {
   "history": [
-    "inlay",
     "teaware",
     "teaware",
     "gift",
@@ -13,9 +12,10 @@
     "teaware",
     "teaware",
     "gift",
-    "bracelet"
+    "bracelet",
+    "incense"
   ],
-  "today_main": "bracelet",
+  "today_main": "incense",
   "today_angles": [
     "jewelrybox",
     "luodian",
