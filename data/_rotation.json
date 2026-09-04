@@ -15,11 +15,11 @@
     "bracelet",
     "incense"
   ],
-  "today_main": "incense",
+  "today_main": "burner",
   "today_angles": [
-    "jewelrybox",
-    "luodian",
-    "lacquer"
+    "stand",
+    "handpiece",
+    "carving"
   ],
-  "date": "2026-09-03"
+  "date": "2026-09-04"
 }
