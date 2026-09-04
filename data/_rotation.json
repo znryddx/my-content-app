@@ -1,6 +1,5 @@
 {
   "history": [
-    "teaware",
     "gift",
     "bracelet",
     "incense",
@@ -13,9 +12,10 @@
     "gift",
     "bracelet",
     "incense",
-    "burner"
+    "burner",
+    "statue"
   ],
-  "today_main": "burner",
+  "today_main": "statue",
   "today_angles": [
     "jewelrybox",
     "screen",
