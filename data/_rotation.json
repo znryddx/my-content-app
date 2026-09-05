@@ -1,6 +1,5 @@
 {
   "history": [
-    "burner",
     "statue",
     "agarwood",
     "inlay",
@@ -13,9 +12,10 @@
     "statue",
     "agarwood",
     "inlay",
-    "teaware"
+    "teaware",
+    "gift"
   ],
-  "today_main": "teaware",
+  "today_main": "gift",
   "today_angles": [
     "luodian",
     "jewelrybox",
