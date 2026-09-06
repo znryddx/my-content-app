@@ -1,6 +1,5 @@
 {
   "history": [
-    "agarwood",
     "inlay",
     "teaware",
     "teaware",
@@ -13,9 +12,10 @@
     "inlay",
     "teaware",
     "gift",
-    "bracelet"
+    "bracelet",
+    "incense"
   ],
-  "today_main": "bracelet",
+  "today_main": "incense",
   "today_angles": [
     "handpiece",
     "wenfang",
