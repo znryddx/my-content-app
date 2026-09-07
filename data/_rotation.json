@@ -1,25 +1,25 @@
 {
- "history": [
-  "teaware",
-  "teaware",
-  "gift",
-  "bracelet",
-  "incense",
-  "burner",
-  "statue",
-  "agarwood",
-  "inlay",
-  "teaware",
-  "gift",
-  "bracelet",
-  "incense",
-  "burner"
- ],
- "today_main": "statue",
- "today_angles": [
-  "stand",
-  "gilt",
-  "niche"
- ],
- "date": "2026-09-07"
+  "history": [
+    "teaware",
+    "gift",
+    "bracelet",
+    "incense",
+    "burner",
+    "statue",
+    "agarwood",
+    "inlay",
+    "teaware",
+    "gift",
+    "bracelet",
+    "incense",
+    "burner",
+    "statue"
+  ],
+  "today_main": "statue",
+  "today_angles": [
+    "stand",
+    "carving",
+    "ruyi"
+  ],
+  "date": "2026-09-07"
 }
