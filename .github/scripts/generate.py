@@ -319,10 +319,13 @@ def write_cat(cat, cells_map):
     with open(os.path.join(folder, DATE + ".json"), "w", encoding="utf-8") as f:
         json.dump(content, f, ensure_ascii=False, indent=2)
 
+    real = sum(1 for c in ordered if str(c.get("body", "")).strip() and "暂未成功" not in c["body"])
+    total = len(ordered)
+
     # 暂存模式：dates.json 与正式目录留到 publish 阶段同步，避免 App 提前把未发布内容当成已上线
     if STAGE_DIR:
         print("Staged %s/%s/%s.json  (%d/%d 真实, %d 占位)"
-              % (STAGE_DIR, cat_id, DATE, real, len(ordered), len(ordered) - real), flush=True)
+              % (STAGE_DIR, cat_id, DATE, real, total, total - real), flush=True)
         return
 
     dates_path = os.path.join(folder, "dates.json")
@@ -337,9 +340,8 @@ def write_cat(cat, cells_map):
     dates.sort()
     with open(dates_path, "w", encoding="utf-8") as f:
         json.dump(dates, f, ensure_ascii=False, indent=2)
-    real = sum(1 for c in ordered if str(c.get("body", "")).strip() and "暂未成功" not in c["body"])
     print("Wrote data/%s/%s.json  (%d/%d 真实, %d 占位)"
-          % (cat_id, DATE, real, len(ordered), len(ordered) - real), flush=True)
+          % (cat_id, DATE, real, total, total - real), flush=True)
 
 
 def _cat_has_content(res, cat_id, n_meta):
