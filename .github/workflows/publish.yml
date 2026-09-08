@@ -1,0 +1,108 @@
+name: 次日内容发布（零成本）
+
+# 与 generate.yml 构成「提前一天生成 / 次日定点发布」：
+# 内容在前一天就生成好了（有一整夜时间重试限流），这里只做搬运上线，不调用任何 AI，
+# 因此不受 OpenRouter 免费额度限流影响，可视为必成。
+
+on:
+  schedule:
+    # 这里的 UTC 时间是「倒推补偿」后的值，不是用户看到的墙钟时间。
+    # GitHub 免费档实测延迟 4~5.5 小时：UTC 18:00 触发 ≈ 实际 UTC 23:00 = 北京时间 07:00。
+    # 后两个为错峰兜底 —— publish.py 是幂等的（已发布则安全跳过），可放心重复触发。
+    - cron: "5 18 * * *"
+    - cron: "5 20 * * *"
+    - cron: "5 22 * * *"
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: '目标发布日期 YYYY-MM-DD（留空=自动推算）'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 推算目标发布日
+        id: target
+        run: |
+          D=$(python .github/scripts/next_target.py "${{ github.event.inputs.target_date }}")
+          echo "date=$D" >> "$GITHUB_OUTPUT"
+          echo "目标发布日 = $D"
+
+      - name: 发布暂存内容（搬运 + 轮换，零 AI）
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+        run: python .github/scripts/publish.py
+
+      - name: 提交并触发 Pages 部署
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "无内容变化，跳过提交"
+          else
+            git commit -m "publish ${{ steps.target.outputs.date }} [bot]"
+            git push
+          fi
+
+  refresh-hot:
+    needs: publish
+    runs-on: ubuntu-latest
+    continue-on-error: true # 热点刷新失败绝不阻断：内容已在上面上线，只是保留隔夜热点
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 推算日期
+        id: target
+        run: |
+          D=$(python .github/scripts/next_target.py "${{ github.event.inputs.target_date }}")
+          echo "date=$D" >> "$GITHUB_OUTPUT"
+
+      - name: 抓取当天最新热点
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+        run: python .github/scripts/fetch_feed.py
+
+      - name: 刷新简报热点版块
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/scripts/refresh_hot.py
+
+      - name: 提交热点刷新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "热点无变化"
+          else
+            git commit -m "refresh hot news ${{ steps.target.outputs.date }} [bot]"
+            git push
+          fi
