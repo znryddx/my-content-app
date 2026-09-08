@@ -64,10 +64,16 @@ jobs:
           LLM_MODEL: ${{ secrets.LLM_MODEL || 'google/gemma-4-31b-it:free' }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://openrouter.ai/api/v1' }}
           GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FULL_REGEN: ${{ github.event.inputs.full && '1' || '' }}
+          # 严格布尔比较：直接写 inputs.full 会被 GitHub 序列化成字符串，
+          # 传 false 也会变成 truthy 字符串从而误触发全量生成（白白多消耗免费额度）
+          FULL_REGEN: ${{ inputs.full == true && '1' || '' }}
         run: python .github/scripts/generate.py
 
       - name: 提交暂存内容
+        # 关键：即使部分分类生成失败也要提交已成功的部分。
+        # 否则这一轮失败的会以退出码终止 job，成功的分类随之被丢弃，
+        # 下一轮错峰又得从零开始 —— 而幂等机制本可以让下一轮只补缺的那几个。
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
