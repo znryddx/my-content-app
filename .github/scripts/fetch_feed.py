@@ -18,7 +18,9 @@ import urllib.error
 import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DATE = datetime.date.today().isoformat()
+# 日期显式化：提前一天抓取时写的是「目标发布日」的 feed 文件，供生成阶段与发布后的热点刷新共用。
+# 不得依赖 today() —— Actions runner 走 UTC，UTC 18:00 触发时北京已是次日，会整整差一天。
+DATE = (os.environ.get("TARGET_DATE") or "").strip() or datetime.date.today().isoformat()
 FEED_DIR = os.path.join(ROOT, "data", "feed")
 os.makedirs(FEED_DIR, exist_ok=True)
 
