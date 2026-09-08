@@ -155,8 +155,12 @@ def main():
     if rejected:
         print("[publish] 暂存内容为占位，拒绝搬运 %d 个分类：%s" % (len(rejected), ",".join(rejected)))
 
-    if meta:
+    if meta and published:
         advance_rotation(meta)
+    elif meta and not published:
+        # 暂存区全是占位 / 无一可发布：宁可不动轮换，保留昨天内容，等下次补齐再推进。
+        # 否则会出现「轮换已跳到新的一天、但线上没有任何当天文件」的空窗。
+        print("[warn] 本次无任何分类被成功搬运，跳过轮换推进（保留原轮换，等下次补齐）")
     else:
         print("[warn] 暂存区缺少 _meta.json，未推进轮换")
 
