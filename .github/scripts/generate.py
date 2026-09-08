@@ -127,9 +127,10 @@ if PRIMARY_MODEL:
     MODELS.insert(0, PRIMARY_MODEL)
 # 逐次退避基数（秒），叠加随机抖动避免多模型同时重试被集体限流
 BACKOFF = [3, 6, 12]
-# —— 备用通道：GitHub Models（Actions 内置 GITHUB_TOKEN，零成本零配置）——
-# OpenRouter 免费档高峰期会长时间排队/限流，此时切换到 GitHub Models 保底，
-# 避免整条日更链路因为单一供应商抖动而中断。
+# —— 备用通道：GitHub Models（已退役，见下）——
+# 注意：GitHub Models 已于 2026-07-30 退役，其 Azure Inference 端点
+# (models.inference.ai.azure.com) 现已 DNS 不可达（[Errno -2]）。保留定义仅供将来
+# 若 GitHub 提供新免费端点时快速恢复；当前调用一律跳过该通道，避免每次无谓 DNS 重试。
 GH_TOKEN = os.environ.get("GH_MODELS_TOKEN", "") or os.environ.get("GITHUB_TOKEN", "")
 GH_ENDPOINT = "https://models.inference.ai.azure.com/chat/completions"
 GH_MODELS = [
@@ -252,14 +253,15 @@ def _call_once(endpoint, key, model, user, timeout=90):
 
 
 def call_model(user):
-    """依次尝试：OpenRouter 免费模型池 -> GitHub Models 池，任一成功即返回"""
+    """依次尝试模型通道，任一成功即返回。当前仅 OpenRouter 免费档可用。"""
     providers = []
     if API_KEY:
         providers.append(("OpenRouter", ENDPOINT, API_KEY, MODELS))
-    if GH_TOKEN:
-        providers.append(("GitHubModels", GH_ENDPOINT, GH_TOKEN, GH_MODELS))
+    # GitHub Models 已于 2026-07-30 退役、端点 DNS 不可达，临时禁用该通道避免无效重试
+    # if GH_TOKEN:
+    #     providers.append(("GitHubModels", GH_ENDPOINT, GH_TOKEN, GH_MODELS))
     if not providers:
-        raise RuntimeError("缺少 LLM_API_KEY 环境变量（请在 Actions Secrets 中配置）")
+        raise RuntimeError("缺少 LLM_API_KEY 环境变量（请在 Actions Secrets 中配置 OpenRouter Key）")
 
     last = None
     for pname, endpoint, key, models in providers:
