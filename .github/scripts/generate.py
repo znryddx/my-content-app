@@ -34,7 +34,41 @@ CATEGORIES = cfg.get("categories", [])
 CELLS = cfg.get("cells", [])
 # 轻角度品类库（含未单独开 tile 的器物，用于简报每日顺带，不生成独立数据文件）
 ANGLE_POOL = {a["id"]: a for a in cfg.get("rotation", {}).get("angle_pool", [])}
-DATE = datetime.date.today().isoformat()
+
+# 目标日期：默认取系统当天；在「D-1 生成 / D 日发布」架构下由 Actions 显式传入明天的日期。
+# 绝不能用 datetime.date.today() 顶替：Actions runner 走 UTC，UTC 18:00 触发时北京已是次日，
+# today() 会整整差一天，导致内容被写成昨天的。
+DATE = (os.environ.get("TARGET_DATE") or "").strip() or datetime.date.today().isoformat()
+
+# 暂存模式：非空时输出到 /data 下的暂存目录（如 data/_pre/2026-09-09），
+# 不碰正式 data/<cat>/、不碰 dates.json、不写 _rotation.json，由 publish.py 在次日搬运发布。
+STAGE_DIR = (os.environ.get("STAGE_DIR") or "").strip()
+
+
+def _base_dir():
+    """内容根目录：暂存模式指向 data/<STAGE_DIR>，否则指向 data/。"""
+    return os.path.join(ROOT, STAGE_DIR) if STAGE_DIR else os.path.join(ROOT, "data")
+
+
+def _cat_file(cat_id):
+    return os.path.join(_base_dir(), cat_id, DATE + ".json")
+
+
+def _staged_ok(cat_id, n_meta):
+    """目标日期的该文件是否已存在，且每个版块都有真实内容（非占位）。"""
+    p = _cat_file(cat_id)
+    if not os.path.exists(p):
+        return False
+    try:
+        with open(p, encoding="utf-8") as f:
+            j = json.load(f)
+    except Exception:
+        return False
+    cs = j.get("cells") or []
+    if len(cs) < n_meta:
+        return False
+    return all(str(c.get("body", "")).strip() and "暂未成功" not in str(c.get("body", ""))
+               for c in cs)
 
 PRIMARY_MODEL = os.environ.get("LLM_MODEL", "minimax/minimax-m3:free")
 
@@ -265,7 +299,7 @@ def fallback(cat):
 def write_cat(cat, cells_map):
     cat_id = cat["id"]
     cells_meta = cat.get("cells") or CELLS
-    folder = os.path.join(ROOT, "data", cat_id)
+    folder = os.path.join(_base_dir(), cat_id)
     os.makedirs(folder, exist_ok=True)
     gen = cells_map.get(cat_id, {}).get("cells", []) if isinstance(cells_map, dict) else []
     # 兜底安全网：模型整体返回空时，用占位文案而非空 body（空 body 会被 App 误判成"生成中"）
@@ -284,6 +318,12 @@ def write_cat(cat, cells_map):
 
     with open(os.path.join(folder, DATE + ".json"), "w", encoding="utf-8") as f:
         json.dump(content, f, ensure_ascii=False, indent=2)
+
+    # 暂存模式：dates.json 与正式目录留到 publish 阶段同步，避免 App 提前把未发布内容当成已上线
+    if STAGE_DIR:
+        print("Staged %s/%s/%s.json  (%d/%d 真实, %d 占位)"
+              % (STAGE_DIR, cat_id, DATE, real, len(ordered), len(ordered) - real), flush=True)
+        return
 
     dates_path = os.path.join(folder, "dates.json")
     dates = []
@@ -335,7 +375,12 @@ def call_batch(batch, extra=""):
             time.sleep(12)
     if result is None:
         # 非破坏性：若当日该分类已有真实内容（如人工补种），不覆盖为占位
-        existing = os.path.join(ROOT, "data", cat["id"], DATE + ".json")
+        existing = _cat_file(cat["id"])
+        # 暂存模式：正式路径若已有真实内容（如人工补种），同样不覆盖为占位
+        if STAGE_DIR:
+            live = os.path.join(ROOT, "data", cat["id"], DATE + ".json")
+            if os.path.exists(live):
+                existing = live
         if os.path.exists(existing):
             try:
                 ej = json.load(open(existing, encoding="utf-8"))
@@ -462,12 +507,23 @@ def main():
     # 轻角度从完整品类库（含未开 tile 的器物）抽取，保证简报每天带出多品类角度
     angle_ids = [a["id"] for a in (rot.get("angle_pool") or [])] or list(pool)
     angles = pick_angles(angle_ids, main_cat, history, n_angles)
-    history.append(main_cat)
-    state["history"] = history[-max(avoid, 14):]
-    state["today_main"] = main_cat
-    state["today_angles"] = angles
-    state["date"] = DATE
-    save_rotation(state)
+    if STAGE_DIR:
+        # 暂存模式：只把本次决策写入暂存区 _meta.json，绝不触碰 _rotation.json。
+        # 轮换推进推迟到 publish 阶段（一天仅一次），根除「触发几次就推进几次」的错乱。
+        stage_root = os.path.join(ROOT, STAGE_DIR)
+        os.makedirs(stage_root, exist_ok=True)
+        with open(os.path.join(stage_root, "_meta.json"), "w", encoding="utf-8") as f:
+            json.dump({"target_date": DATE, "main_cat": main_cat, "angles": angles,
+                       "history_before": history[-max(avoid, 14):]},
+                      f, ensure_ascii=False, indent=2)
+        print("[stage] 轮换决策已写入 %s/_meta.json（未触碰 _rotation.json）" % STAGE_DIR, flush=True)
+    else:
+        history.append(main_cat)
+        state["history"] = history[-max(avoid, 14):]
+        state["today_main"] = main_cat
+        state["today_angles"] = angles
+        state["date"] = DATE
+        save_rotation(state)
 
     # 香品二级细分：今日定一个 subtype 注入 theme/strategy（确定性，按日期）
     inc_sub = None
@@ -499,6 +555,12 @@ def main():
              "、".join(cat_label(a) for a in angles),
              "、".join(cat_label(x) for x in always)))
     print("本次生成 %d 个分类：%s" % (len(to_gen), ",".join(c["id"] for c in to_gen)))
+
+    # 幂等：本次目标的内容已生成齐全则直接跳过，避免每次错峰触发都重复消耗免费额度。
+    # 这是「同一 workflow 每天触发 N 次」仍能保持一天一份内容的关键。
+    if all(_staged_ok(c["id"], len(c.get("cells") or CELLS)) for c in to_gen):
+        print("[skip] %s 的内容已全部存在且为真实内容，跳过本次生成（幂等）" % DATE, flush=True)
+        return
 
     failed = []
     for i, cat in enumerate(to_gen):
