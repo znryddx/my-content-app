@@ -13,13 +13,14 @@
   "burner",
   "statue",
   "agarwood",
-  "inlay"
+  "inlay",
+  "agarwood"
  ],
- "today_main": "agarwood",
+ "today_main": "teaware",
  "today_angles": [
-  "oil",
-  "grade",
-  "origin"
+  "screen",
+  "luodian",
+  "carving"
  ],
- "date": "2026-09-08"
+ "date": "2026-09-09"
 }
