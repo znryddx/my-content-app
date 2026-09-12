@@ -548,11 +548,12 @@ def main():
         % (cat_label(main_cat), mt, "、".join(cat_label(a) for a in angles), fest_line, avoid)
     )
 
-    # 待生成集合：默认轮换（常驻+主推）；FULL_REGEN=1 时全量生成所有分类
-    if os.environ.get("FULL_REGEN") == "1":
-        to_gen_ids = {c["id"] for c in CATEGORIES}
-    else:
+    # 待生成集合：默认全量生成所有品类（全8日更）；若显式设置 ROTATION_MODE=1 则退回「1 主推 + 常驻」轮换模式。
+    # 依据：OpenRouter 免费档每模型每天 ~20 次；全部 11 品类 ≈ 11 次调用，仍在额度内（历史"额度耗尽"是反复手动重跑所致）。
+    if os.environ.get("ROTATION_MODE") == "1":
         to_gen_ids = set(always) | {main_cat}
+    else:
+        to_gen_ids = {c["id"] for c in CATEGORIES}
     to_gen = [c for c in CATEGORIES if c["id"] in to_gen_ids]
     print("今日主推：%s%s | 顺带：%s | 常驻：%s"
           % (cat_label(main_cat), ("·" + inc_sub) if inc_sub else "",
