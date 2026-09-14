@@ -887,16 +887,18 @@ function fileExistsGood(date) {
   }));
   if (aiHits === 0 || allFromFallback) {
     const msg = aiHits === 0
-      ? 'AI 通道全部不可用，已跳过生成，未写入任何内容（避免与历史重复）'
-      : 'AI 返回内容全部与历史重复，已拒绝写入';
-    console.error('[拒绝写入] ' + date + ' — ' + msg);
-    writeStatus(date, 'ai_failed', msg, true);
+      ? 'AI 通道全部不可用，已用兜底模板写入（避免空窗）'
+      : 'AI 返回内容全部与历史重复，已用兜底模板写入';
+    console.error('[兜底写入] ' + date + ' — ' + msg);
+    writeData(date, { date, cats });
+    writeStatus(date, 'fallback', msg, true);
     console.log('[状态] 已写入 _status.json（含 ' + TRACE.length + ' 行追踪）');
     return;
   }
   if (totalNew < 40) {
-    console.error('[拒绝写入] ' + date + ' — 全新内容仅 ' + totalNew + ' 条（<40），判定为复读，不写入');
-    writeStatus(date, 'ai_failed', '生成内容新鲜度不足（' + totalNew + ' 条），已跳过', true);
+    console.error('[低新鲜度兜底写入] ' + date + ' — 全新内容仅 ' + totalNew + ' 条（<40），仍写入已有内容避免空窗');
+    writeData(date, { date, cats });
+    writeStatus(date, 'fallback_low', '生成内容新鲜度不足（' + totalNew + ' 条），已用兜底写入', true);
     return;
   }
 
