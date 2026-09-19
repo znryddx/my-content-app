@@ -1,6 +1,5 @@
 {
   "history": [
-    "statue",
     "agarwood",
     "inlay",
     "agarwood",
@@ -13,13 +12,14 @@
     "inlay",
     "agarwood",
     "teaware",
-    "gift"
+    "gift",
+    "bracelet"
   ],
-  "today_main": "gift",
+  "today_main": "bracelet",
   "today_angles": [
-    "handpiece",
+    "ruyi",
     "jewelrybox",
-    "carving"
+    "screen"
   ],
-  "date": "2026-09-19"
+  "date": "2026-09-20"
 }
