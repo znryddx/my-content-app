@@ -1,0 +1,217 @@
+{
+  "date": "2026-09-30",
+  "platforms": {
+    "douyin": {
+      "name": "抖音",
+      "categories": {
+        "burner": {
+          "title": "一炉香能撑多久",
+          "hook": "器对了，烟才立得住",
+          "photo": "香炉特写+烟线慢镜+计时字",
+          "interact": "想要同款扣1"
+        },
+        "incense": {
+          "title": "买香先看烟，别只看名",
+          "hook": "一炷燃尽要几分钟",
+          "photo": "点燃+青烟慢镜",
+          "interact": "评论区报你常点的香"
+        },
+        "bracelet": {
+          "title": "戴串的人都在盘什么",
+          "hook": "盘的是耐心不是包浆",
+          "photo": "腕部特写+盘玩前后对比",
+          "interact": "扣1晒你的本命串"
+        },
+        "statue": {
+          "title": "案头小像怎么摆不突兀",
+          "hook": "不求大，只求静",
+          "photo": "造像侧光+书案同框",
+          "interact": "晒你的案头"
+        },
+        "agarwood": {
+          "title": "沉香贵在哪一克",
+          "hook": "先学会闻，再谈价",
+          "photo": "香材剖面+品香特写",
+          "interact": "扣想看的产区"
+        },
+        "inlay": {
+          "title": "螺钿为什么越看越贵气",
+          "hook": "懂工艺才懂价值",
+          "photo": "螺钿迎光转动特写",
+          "interact": "想看细节扣1"
+        },
+        "teaware": {
+          "title": "国庆待客的茶席三件套",
+          "hook": "不贵但拿得出手",
+          "photo": "茶器组合+出汤特写",
+          "interact": "收藏这份茶单"
+        },
+        "gift": {
+          "title": "国庆送礼别只送红包",
+          "hook": "一份体面的东方礼",
+          "photo": "礼盒开箱+小物陈列",
+          "interact": "点名你要送谁"
+        }
+      }
+    },
+    "xiaohongshu": {
+      "name": "小红书",
+      "categories": {
+        "burner": {
+          "title": "国风香具怎么挑不踩坑",
+          "hook": "香炉香插香盒一次讲清",
+          "photo": "器物九宫格+使用场景",
+          "interact": "抄走这份清单"
+        },
+        "incense": {
+          "title": "居家焚香不踩坑清单",
+          "hook": "三支线香搞定秋天氛围",
+          "photo": "线香+藤编香插+窗光",
+          "interact": "抄走这份香单"
+        },
+        "bracelet": {
+          "title": "手串保养翻车实录",
+          "hook": "戴了半年的串该怎么盘",
+          "photo": "盘玩对比+收纳图",
+          "interact": "收藏避坑指南"
+        },
+        "statue": {
+          "title": "书桌上的安静角落",
+          "hook": "一尊小像稳住情绪",
+          "photo": "造像+绿植一角",
+          "interact": "晒你的角落"
+        },
+        "agarwood": {
+          "title": "新手入沉香避坑",
+          "hook": "先闻后买不交学费",
+          "photo": "香材对比+闻香",
+          "interact": "收藏避坑笔记"
+        },
+        "inlay": {
+          "title": "螺钿首饰盒美到犯规",
+          "hook": "收纳本身也是陈列",
+          "photo": "螺钿盒迎光特写",
+          "interact": "想要链接扣1"
+        },
+        "teaware": {
+          "title": "一个人的秋日茶席",
+          "hook": "三件器物过出仪式感",
+          "photo": "茶席俯拍+暖光",
+          "interact": "收藏茶席灵感"
+        },
+        "gift": {
+          "title": "不撞款的国庆礼单",
+          "hook": "东方小物送谁都体面",
+          "photo": "礼盒九宫格+出处卡",
+          "interact": "抄走这份清单"
+        }
+      }
+    },
+    "shipinhao": {
+      "name": "视频号",
+      "categories": {
+        "burner": {
+          "title": "一炉香接住归处",
+          "hook": "回家先点一支，器在烟才直",
+          "photo": "玄关香炉空镜+烟线",
+          "interact": "分享你的回家仪式"
+        },
+        "incense": {
+          "title": "秋夜点一支香",
+          "hook": "给忙碌一天按暂停",
+          "photo": "夜色+香炉微光+烟线",
+          "interact": "说说你的放松法"
+        },
+        "bracelet": {
+          "title": "一串一秋，腕间温润",
+          "hook": "长假出门戴串更有仪式",
+          "photo": "腕部特写+秋景空镜",
+          "interact": "分享你的本命串"
+        },
+        "statue": {
+          "title": "案头有像，心自静",
+          "hook": "工作台的安定感从哪来",
+          "photo": "造像+桌面同框",
+          "interact": "晒工作台"
+        },
+        "agarwood": {
+          "title": "沉香里的秋天",
+          "hook": "闻一片就懂季节",
+          "photo": "香材+落叶空镜",
+          "interact": "说你爱的秋味"
+        },
+        "inlay": {
+          "title": "螺钿里的那束光",
+          "hook": "把星光收进盒子",
+          "photo": "螺钿转动反光",
+          "interact": "想要同款扣1"
+        },
+        "teaware": {
+          "title": "一盏茶过秋天",
+          "hook": "慢下来才尝得到",
+          "photo": "茶汤+注水特写",
+          "interact": "约茶的朋友"
+        },
+        "gift": {
+          "title": "一份东方礼的心意学",
+          "hook": "送器物的体面谁懂谁知道",
+          "photo": "礼盒递出+收礼反应",
+          "interact": "点名送礼对象"
+        }
+      }
+    },
+    "weixin": {
+      "name": "微信",
+      "categories": {
+        "burner": {
+          "title": "焚香器具图鉴：炉·插·盒·几",
+          "hook": "一篇看懂四种器怎么配",
+          "photo": "器型图谱+场景示意",
+          "interact": "留言问你家适合哪种"
+        },
+        "incense": {
+          "title": "线香入门：从香型到用法",
+          "hook": "一篇读懂怎么点怎么选",
+          "photo": "线香图谱+香插示意",
+          "interact": "留言说你偏好"
+        },
+        "bracelet": {
+          "title": "手串挑选与保养手册",
+          "hook": "新手买串别急着下手",
+          "photo": "材质图鉴+盘玩示意",
+          "interact": "留言问材质"
+        },
+        "statue": {
+          "title": "案头造像的陈设法",
+          "hook": "小像如何融入日常",
+          "photo": "造像+书案布置",
+          "interact": "晒布置求点评"
+        },
+        "agarwood": {
+          "title": "沉香入门不交学费",
+          "hook": "产区与品闻一次讲清",
+          "photo": "香材图鉴",
+          "interact": "留言区答疑"
+        },
+        "inlay": {
+          "title": "百宝嵌工艺小史",
+          "hook": "为什么它显贵气",
+          "photo": "工艺拆解图",
+          "interact": "想看哪件扣1"
+        },
+        "teaware": {
+          "title": "秋日茶器搭配建议",
+          "hook": "按场景配齐不浪费",
+          "photo": "茶器清单",
+          "interact": "问搭配"
+        },
+        "gift": {
+          "title": "国庆东方礼单（附出处）",
+          "hook": "可日用、有讲究、不贵",
+          "photo": "礼单长图+出处说明",
+          "interact": "点名送礼对象"
+        }
+      }
+    }
+  }
+}
