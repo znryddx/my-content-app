@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-02",
+  "cats": [
+    {
+      "id": "screen_baibao",
+      "label": "屏风文案（百宝嵌）",
+      "items": []
+    },
+    {
+      "id": "cabinet_baibao",
+      "label": "柜子文案（百宝嵌）",
+      "items": []
+    },
+    {
+      "id": "screen_luodian",
+      "label": "屏风文案（螺钿）",
+      "items": []
+    },
+    {
+      "id": "cabinet_luodian",
+      "label": "柜子文案（螺钿）",
+      "items": []
+    }
+  ]
+}
