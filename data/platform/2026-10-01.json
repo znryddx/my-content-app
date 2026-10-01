@@ -1,0 +1,217 @@
+{
+  "date": "2026-10-01",
+  "platforms": {
+    "douyin": {
+      "name": "抖音",
+      "categories": {
+        "burner": {
+          "title": "香炉怎么选不踩雷",
+          "hook": "器对了烟才立得住",
+          "photo": "铜炉特写+烟线慢镜",
+          "interact": "想要同款扣1"
+        },
+        "incense": {
+          "title": "线香入门三不踩",
+          "hook": "先闻后买不交学费",
+          "photo": "线香排列+点燃",
+          "interact": "求清单"
+        },
+        "bracelet": {
+          "title": "手串盘出包浆要多久",
+          "hook": "急不得，它自己会亮",
+          "photo": "手串特写+手盘",
+          "interact": "晒你的串"
+        },
+        "statue": {
+          "title": "国庆宅家，给案头请尊小像",
+          "hook": "不求大，只求静",
+          "photo": "造像+书案+国庆小景",
+          "interact": "晒你的案头"
+        },
+        "agarwood": {
+          "title": "沉香为什么这么香",
+          "hook": "闻过真的才懂",
+          "photo": "沉香原材+烟",
+          "interact": "求科普"
+        },
+        "inlay": {
+          "title": "百宝嵌到底嵌了啥",
+          "hook": "螺钿贝壳里的山海",
+          "photo": "百宝嵌特写+光转",
+          "interact": "求科普"
+        },
+        "teaware": {
+          "title": "茶席小物怎么配不翻车",
+          "hook": "少而精才显贵",
+          "photo": "茶则壶承盖置平铺",
+          "interact": "求清单"
+        },
+        "gift": {
+          "title": "国庆送什么不踩雷",
+          "hook": "有出处的小件最稳",
+          "photo": "礼盒开箱+造像",
+          "interact": "抄礼单"
+        }
+      }
+    },
+    "xiaohongshu": {
+      "name": "小红书",
+      "categories": {
+        "burner": {
+          "title": "新手第一只香炉怎么挑",
+          "hook": "预算200也能体面",
+          "photo": "炉+香+垫布平铺",
+          "interact": "抄作业"
+        },
+        "incense": {
+          "title": "秋日书香清单",
+          "hook": "一支香点亮一书房",
+          "photo": "书+香+暖光",
+          "interact": "收藏"
+        },
+        "bracelet": {
+          "title": "通勤手串怎么搭不土",
+          "hook": "低调才高级",
+          "photo": "腕间一抹色",
+          "interact": "抄搭配"
+        },
+        "statue": {
+          "title": "一尊像，稳住长假焦虑",
+          "hook": "书桌角的安静处方",
+          "photo": "造像+绿植+台灯",
+          "interact": "晒你的角落"
+        },
+        "agarwood": {
+          "title": "沉香入门不交智商税",
+          "hook": "先认味再掏钱",
+          "photo": "香材对比+闻香",
+          "interact": "收藏避坑"
+        },
+        "inlay": {
+          "title": "把山海嵌进一方盒",
+          "hook": "螺钿是流动的光",
+          "photo": "漆盒+螺钿细节",
+          "interact": "抄作业"
+        },
+        "teaware": {
+          "title": "国庆待客茶席布置",
+          "hook": "一套小物撑场面",
+          "photo": "茶席全景+暖光",
+          "interact": "收藏"
+        },
+        "gift": {
+          "title": "能日用又能摆的礼",
+          "hook": "收了不闲置才体面",
+          "photo": "礼盒+书案布置",
+          "interact": "收藏"
+        }
+      }
+    },
+    "shipinhao": {
+      "name": "视频号",
+      "categories": {
+        "burner": {
+          "title": "一炉香能撑多久",
+          "hook": "器对了，烟才立得住",
+          "photo": "香炉特写+计时字",
+          "interact": "想要同款"
+        },
+        "incense": {
+          "title": "一支线香的慢",
+          "hook": "长假给自己留白",
+          "photo": "燃香慢镜+手翻书",
+          "interact": "想要"
+        },
+        "bracelet": {
+          "title": "一串珠子的静气",
+          "hook": "手里有点事心就定",
+          "photo": "盘串慢镜",
+          "interact": "想要同款"
+        },
+        "statue": {
+          "title": "案头有像，心自静",
+          "hook": "长假工作台的安定感",
+          "photo": "造像+笔记本同框",
+          "interact": "晒工作台"
+        },
+        "agarwood": {
+          "title": "一缕沉香慢下来",
+          "hook": "长假给自己留白",
+          "photo": "沉香点燃慢镜",
+          "interact": "想要"
+        },
+        "inlay": {
+          "title": "会发光的传统工艺",
+          "hook": "贝光里看东方",
+          "photo": "螺钿转动光斑",
+          "interact": "想要同款"
+        },
+        "teaware": {
+          "title": "一席茶安顿长假",
+          "hook": "慢下来从一杯开始",
+          "photo": "注茶慢镜",
+          "interact": "想要"
+        },
+        "gift": {
+          "title": "一份拿得出手的心意",
+          "hook": "轻文化礼最讨喜",
+          "photo": "礼盒慢开",
+          "interact": "想要同款"
+        }
+      }
+    },
+    "weixin": {
+      "name": "微信",
+      "categories": {
+        "burner": {
+          "title": "香炉的器与用",
+          "hook": "选炉先看场景",
+          "photo": "铜炉/陶炉对比",
+          "interact": "留言聊聊"
+        },
+        "incense": {
+          "title": "线香与节气",
+          "hook": "入秋该闻什么",
+          "photo": "香盒开合+节气字",
+          "interact": "聊聊你的香"
+        },
+        "bracelet": {
+          "title": "手串的养与戴",
+          "hook": "人养珠珠养人",
+          "photo": "木串+棉布",
+          "interact": "留言求养护"
+        },
+        "statue": {
+          "title": "造像怎么融入新中式家",
+          "hook": "小像不抢戏才高级",
+          "photo": "造像+博古架布置",
+          "interact": "晒布置求点评"
+        },
+        "agarwood": {
+          "title": "沉香的产区与味",
+          "hook": "入门先懂这几种",
+          "photo": "香材排列",
+          "interact": "聊聊你的香"
+        },
+        "inlay": {
+          "title": "百宝嵌的前世今生",
+          "hook": "一盒一世界",
+          "photo": "百宝嵌盒特写",
+          "interact": "留言聊聊"
+        },
+        "teaware": {
+          "title": "茶空间器物的选与养",
+          "hook": "用出来的包浆最贵",
+          "photo": "茶器排列",
+          "interact": "聊聊你的茶"
+        },
+        "gift": {
+          "title": "节礼的选品逻辑",
+          "hook": "日用+出处=复购",
+          "photo": "礼盒组合",
+          "interact": "留言求推荐"
+        }
+      }
+    }
+  }
+}
