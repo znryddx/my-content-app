@@ -13,13 +13,14 @@
     "teaware",
     "gift",
     "bracelet",
+    "gift",
     "gift"
   ],
-  "today_main": "gift",
+  "today_main": "bracelet",
   "today_angles": [
-    "ruyi",
     "luodian",
-    "wenfang"
+    "jewelrybox",
+    "handpiece"
   ],
-  "date": "2026-10-08"
+  "date": "2026-10-07"
 }
