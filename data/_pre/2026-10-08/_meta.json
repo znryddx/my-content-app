@@ -1,17 +1,12 @@
 {
   "target_date": "2026-10-08",
-  "main_cat": "gift",
+  "main_cat": "incense",
   "angles": [
     "ruyi",
     "luodian",
     "wenfang"
   ],
   "history_before": [
-    "incense",
-    "burner",
-    "statue",
-    "inlay",
-    "agarwood",
     "teaware",
     "gift",
     "bracelet",
@@ -20,6 +15,11 @@
     "statue",
     "inlay",
     "agarwood",
-    "teaware"
+    "teaware",
+    "teaware",
+    "gift",
+    "bracelet",
+    "gift",
+    "gift"
   ]
 }
