@@ -1,0 +1,217 @@
+{
+ "date": "2026-10-08",
+ "platforms": {
+  "douyin": {
+   "name": "抖音",
+   "categories": {
+    "burner": {
+     "title": "香炉摆放三忌",
+     "hook": "别把炉子放这儿",
+     "photo": "桌面炉位对比",
+     "interact": "你家摆哪扣1"
+    },
+    "incense": {
+     "title": "线香入门别乱买",
+     "hook": "先看这三点",
+     "photo": "香支特写+烟雾",
+     "interact": "求清单扣1"
+    },
+    "bracelet": {
+     "title": "手串叠戴高级感公式",
+     "hook": "不是越花越好看",
+     "photo": "手腕多视角混搭",
+     "interact": "想看搭配扣1"
+    },
+    "statue": {
+     "title": "造像别只看出价",
+     "hook": "看这处细节",
+     "photo": "造像局部光斑",
+     "interact": "懂行的扣1"
+    },
+    "agarwood": {
+     "title": "沉香新手避坑",
+     "hook": "别被'奇楠'忽悠",
+     "photo": "沉香切片对比",
+     "interact": "求鉴别扣1"
+    },
+    "inlay": {
+     "title": "百宝嵌为什么贵",
+     "hook": "看这层镶嵌",
+     "photo": "螺钿转光特写",
+     "interact": "想看工艺扣1"
+    },
+    "teaware": {
+     "title": "茶器选对不踩雷",
+     "hook": "按茶选器",
+     "photo": "壶承盖置组合",
+     "interact": "求搭配扣1"
+    },
+    "gift": {
+     "title": "送礼别翻车",
+     "hook": "四栏人群打法",
+     "photo": "青瓷香囊丝绸",
+     "interact": "送谁扣1"
+    }
+   }
+  },
+  "xiaohongshu": {
+   "name": "小红书",
+   "categories": {
+    "burner": {
+     "title": "把香炉请进客厅的100种方式",
+     "hook": "氛围感拉满的小角落",
+     "photo": "香炉+干花桌面",
+     "interact": "收藏起来慢慢抄"
+    },
+    "incense": {
+     "title": "秋日宅家香事日记",
+     "hook": "一缕烟把焦虑按暂停",
+     "photo": "香席俯拍ins风",
+     "interact": "求同款香扣1"
+    },
+    "bracelet": {
+     "title": "秋日腕间色彩学🍂",
+     "hook": "手串配卫衣也太高级",
+     "photo": "手腕OOTD多张拼图",
+     "interact": "想看配色扣1"
+    },
+    "statue": {
+     "title": "案头一尊小像，心就静了",
+     "hook": "东方留白美学",
+     "photo": "造像+留白背景",
+     "interact": "抄作业扣1"
+    },
+    "agarwood": {
+     "title": "沉香入门不踩雷指南",
+     "hook": "新手别一上来买贵",
+     "photo": "香材平铺对比",
+     "interact": "求避雷扣1"
+    },
+    "inlay": {
+     "title": "百宝嵌：把四季嵌进器物",
+     "hook": "螺钿转光太治愈",
+     "photo": "嵌件微距",
+     "interact": "想看细节扣1"
+    },
+    "teaware": {
+     "title": "秋日茶席布置灵感",
+     "hook": "一个托盘搞定",
+     "photo": "茶席俯拍",
+     "interact": "收藏抄作业"
+    },
+    "gift": {
+     "title": "东方小礼送礼清单",
+     "hook": "体面不贵有心意",
+     "photo": "礼盒平铺",
+     "interact": "送谁抄哪栏扣1"
+    }
+   }
+  },
+  "shipinhao": {
+   "name": "视频号",
+   "categories": {
+    "burner": {
+     "title": "香炉怎么选不踩坑",
+     "hook": "三种炉型讲清楚",
+     "photo": "真人手持讲解",
+     "interact": "想看实测扣1"
+    },
+    "incense": {
+     "title": "手作香道微课",
+     "hook": "从原料到点燃全程",
+     "photo": "慢镜头点燃",
+     "interact": "求下一期扣1"
+    },
+    "bracelet": {
+     "title": "手串入门避坑指南",
+     "hook": "材质辨识+尺寸选择",
+     "photo": "真人试戴多视角",
+     "interact": "想看详解扣1"
+    },
+    "statue": {
+     "title": "造像之美一讲就懂",
+     "hook": "看线条里的慈悲",
+     "photo": "造像光影",
+     "interact": "想看系列扣1"
+    },
+    "agarwood": {
+     "title": "沉香真伪一课通",
+     "hook": "三招辨真假",
+     "photo": "切片对比特写",
+     "interact": "求鉴别课扣1"
+    },
+    "inlay": {
+     "title": "百宝嵌工艺全解",
+     "hook": "镶嵌的讲究",
+     "photo": "工匠手部特写",
+     "interact": "想看制作扣1"
+    },
+    "teaware": {
+     "title": "茶器搭配小课堂",
+     "hook": "一壶一承怎么配",
+     "photo": "茶席实拍",
+     "interact": "想看搭配扣1"
+    },
+    "gift": {
+     "title": "节礼怎么送得体",
+     "hook": "四栏人群对号入座",
+     "photo": "礼盒开箱",
+     "interact": "送谁扣1"
+    }
+   }
+  },
+  "weixin": {
+   "name": "微信",
+   "categories": {
+    "burner": {
+     "title": "寒露将至，一炉香安顿身心",
+     "hook": "秋燥里的一处静",
+     "photo": "香炉+书案场景",
+     "interact": "回复'香'看详述"
+    },
+    "incense": {
+     "title": "宅家香事：把秋天留在屋里",
+     "hook": "线香与节气",
+     "photo": "香席+窗景",
+     "interact": "回复'香单'领取"
+    },
+    "bracelet": {
+     "title": "腕间一方小世界：秋日手串指南",
+     "hook": "慢下半拍的东方佩戴",
+     "photo": "手腕特写+穿搭",
+     "interact": "回复'手串'看全款"
+    },
+    "statue": {
+     "title": "一尊像，安放一处心",
+     "hook": "造像与当代生活",
+     "photo": "造像+留白空间",
+     "interact": "回复'造像'了解"
+    },
+    "agarwood": {
+     "title": "沉香：时间凝成的香",
+     "hook": "从一块料说起",
+     "photo": "沉香原材微距",
+     "interact": "回复'沉香'详读"
+    },
+    "inlay": {
+     "title": "百宝嵌：把时光嵌进器物",
+     "hook": "螺钿里的二十四节气",
+     "photo": "嵌件转光",
+     "interact": "回复'嵌'看工艺"
+    },
+    "teaware": {
+     "title": "一盏茶，接住秋天的凉",
+     "hook": "秋日茶器清单",
+     "photo": "茶席暖光",
+     "interact": "回复'茶'取清单"
+    },
+    "gift": {
+     "title": "一份东方小礼，替你说出心意",
+     "hook": "四栏送礼不打怵",
+     "photo": "礼盒组合",
+     "interact": "回复'礼'看全案"
+    }
+   }
+  }
+ }
+}
