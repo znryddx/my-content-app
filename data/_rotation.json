@@ -1,6 +1,5 @@
 {
   "history": [
-    "gift",
     "bracelet",
     "incense",
     "burner",
@@ -13,13 +12,14 @@
     "bracelet",
     "gift",
     "gift",
-    "incense"
+    "incense",
+    "burner"
   ],
-  "today_main": "incense",
+  "today_main": "burner",
   "today_angles": [
-    "ruyi",
     "luodian",
-    "wenfang"
+    "lacquer",
+    "jewelrybox"
   ],
-  "date": "2026-10-08"
+  "date": "2026-10-09"
 }
