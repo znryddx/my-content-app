@@ -5,45 +5,45 @@
       "name": "抖音",
       "categories": {
         "bracelet": {
-          "title": "手串叠戴高级感公式",
-          "hook": "不是越花越好看",
-          "photo": "手腕多视角混搭",
-          "interact": "想看搭配扣1"
+          "title": "手串别戴成中年感",
+          "hook": "三招变高级",
+          "photo": "手腕多视角",
+          "interact": "想看教程扣1"
         },
         "incense": {
-          "title": "线香这样点才对",
-          "hook": "别一烧就走",
-          "photo": "香篆打拓特写",
+          "title": "点香前先看懂香篆",
+          "hook": "不是随便烧",
+          "photo": "香篆打拓",
           "interact": "想看手法扣1"
         },
         "burner": {
-          "title": "一炉香，半日闲",
-          "hook": "炉是静下来的理由",
-          "photo": "香炉青烟慢镜头",
+          "title": "案头一炉，心先静",
+          "hook": "铜炉是东方慢",
+          "photo": "炉烟慢镜头",
           "interact": "想看器型扣1"
         },
         "statue": {
-          "title": "一尊像，安放一处心",
-          "hook": "不是迷信是安心",
-          "photo": "造像侧光特写",
+          "title": "一尊像安一处心",
+          "hook": "不是摆设是安心",
+          "photo": "造像侧光",
           "interact": "想看工艺扣1"
         },
         "agarwood": {
-          "title": "沉香为什么这么香",
+          "title": "沉香为什么一小块就香",
           "hook": "闻过才懂",
-          "photo": "沉香原材切面",
+          "photo": "沉香切面",
           "interact": "想看产区扣1"
         },
         "inlay": {
-          "title": "百宝嵌凭什么贵",
-          "hook": "看这层镶嵌",
-          "photo": "螺钿转光特写",
+          "title": "百宝嵌到底贵在哪",
+          "hook": "看这层螺钿转光",
+          "photo": "螺钿流光特写",
           "interact": "想看工艺扣1"
         },
         "teaware": {
-          "title": "秋日茶席一方",
+          "title": "秋日茶席一方器",
           "hook": "器以载茶",
-          "photo": "茶则壶承组合",
+          "photo": "茶则壶承",
           "interact": "想看搭配扣1"
         },
         "gift": {
@@ -58,50 +58,50 @@
       "name": "小红书",
       "categories": {
         "bracelet": {
-          "title": "秋日腕间色彩学🍂",
-          "hook": "手串配卫衣太高级",
-          "photo": "手腕OOTD拼图",
+          "title": "秋日腕间高级感🍂",
+          "hook": "木珠配针织太绝",
+          "photo": "手腕OOTD",
           "interact": "想看配色扣1"
         },
         "incense": {
           "title": "在家点香的氛围感",
           "hook": "把秋天燃进屋里",
-          "photo": "香插与书页同框",
+          "photo": "香插与书",
           "interact": "想看香单扣1"
         },
         "burner": {
-          "title": "铜炉里的东方慢生活",
+          "title": "铜炉里的慢生活",
           "hook": "一缕烟就静了",
-          "photo": "炉+茶席静物",
+          "photo": "炉与茶席",
           "interact": "想看器型扣1"
         },
         "statue": {
-          "title": "把一份安宁请回家",
-          "hook": "造像不是摆设",
-          "photo": "造像与绿植角落",
+          "title": "把安宁请进家",
+          "hook": "造像不是迷信",
+          "photo": "造像一角",
           "interact": "想看寓意扣1"
         },
         "agarwood": {
-          "title": "沉香的治愈香气",
-          "hook": "闻一口就松了",
-          "photo": "香材+手作特写",
+          "title": "沉香的治愈力",
+          "hook": "闻一口松下来",
+          "photo": "香材手作",
           "interact": "想看选香扣1"
         },
         "inlay": {
-          "title": "百宝嵌：把四季嵌进器物",
-          "hook": "螺钿转光太治愈",
+          "title": "百宝嵌：把秋光嵌进器物",
+          "hook": "螺钿转光太上头",
           "photo": "嵌件微距",
           "interact": "想看细节扣1"
         },
         "teaware": {
           "title": "秋日茶器氛围感",
           "hook": "一杯茶的温度",
-          "photo": "壶承盖置拼图",
+          "photo": "壶承拼图",
           "interact": "想看一套扣1"
         },
         "gift": {
-          "title": "新中式送礼清单",
-          "hook": "体面又不撞款",
+          "title": "新中式送礼不撞款",
+          "hook": "体面又有心",
           "photo": "礼盒平铺",
           "interact": "想看清单扣1"
         }
@@ -117,19 +117,19 @@
           "interact": "想看教学扣1"
         },
         "incense": {
-          "title": "一分钟学会打香篆",
+          "title": "一分钟打香篆",
           "hook": "慢下来只要一刻",
           "photo": "香篆过程",
           "interact": "想看教程扣1"
         },
         "burner": {
-          "title": "案头一炉，心就定了",
+          "title": "案头一炉万虑息",
           "hook": "器以载心",
           "photo": "炉与案头",
           "interact": "想看器型扣1"
         },
         "statue": {
-          "title": "造像里的中式美学",
+          "title": "造像里的中式美",
           "hook": "安静自有力量",
           "photo": "造像光影",
           "interact": "想看故事扣1"
@@ -141,20 +141,20 @@
           "interact": "想看科普扣1"
         },
         "inlay": {
-          "title": "百宝嵌的镶嵌秘密",
-          "hook": "毫厘之间的讲究",
+          "title": "百宝嵌的镶嵌门道",
+          "hook": "毫厘间的讲究",
           "photo": "嵌工微距",
           "interact": "想看工艺扣1"
         },
         "teaware": {
-          "title": "一套茶器过秋天",
-          "hook": "喝茶是种仪式",
+          "title": "一套茶器过秋",
+          "hook": "喝茶是仪式",
           "photo": "茶席全景",
           "interact": "想看配置扣1"
         },
         "gift": {
           "title": "逢节送礼不踩雷",
-          "hook": "心意比价重要",
+          "hook": "心意比价重",
           "photo": "礼盒展示",
           "interact": "想看攻略扣1"
         }
@@ -164,13 +164,13 @@
       "name": "微信",
       "categories": {
         "bracelet": {
-          "title": "腕间一方小世界：秋日手串指南",
+          "title": "腕间一方小世界：秋日手串",
           "hook": "慢下半拍的东方佩戴",
-          "photo": "手腕特写+穿搭",
+          "photo": "手腕与穿搭",
           "interact": "回复'手串'看全款"
         },
         "incense": {
-          "title": "寒露焚香：把秋天燃进一炉",
+          "title": "寒露焚香：燃一炉秋天",
           "hook": "香是给自己的仪式",
           "photo": "香插与窗景",
           "interact": "回复'香'看香单"
@@ -178,23 +178,23 @@
         "burner": {
           "title": "一炉在案，万虑俱息",
           "hook": "铜炉里的东方静气",
-          "photo": "炉+书案",
+          "photo": "炉与书案",
           "interact": "回复'炉'看器型"
         },
         "statue": {
           "title": "请一尊像，安一处心",
           "hook": "造像即安心",
-          "photo": "造像与一角茶席",
+          "photo": "造像与茶席",
           "interact": "回复'像'看寓意"
         },
         "agarwood": {
-          "title": "沉香：闻得到的山河岁月",
+          "title": "沉香：闻得到的山河",
           "hook": "一缕香里有故事",
-          "photo": "沉香+手作",
+          "photo": "沉香与手作",
           "interact": "回复'沉香'看选香"
         },
         "inlay": {
-          "title": "百宝嵌：把时光嵌进器物",
+          "title": "百宝嵌：把秋光嵌进器物",
           "hook": "螺钿里的二十四节气",
           "photo": "嵌件转光",
           "interact": "回复'嵌'看工艺"
@@ -202,7 +202,7 @@
         "teaware": {
           "title": "秋日茶席：器以载茶",
           "hook": "一杯茶的一方天地",
-          "photo": "茶则壶承组合",
+          "photo": "茶则壶承",
           "interact": "回复'茶'看一套"
         },
         "gift": {
